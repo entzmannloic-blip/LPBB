@@ -1,0 +1,846 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import {
+  Sparkles, Activity, Info, CalendarDays, TrendingUp, Check, ChevronRight, ChevronLeft,
+  Heart, Settings, HelpCircle, Leaf, Plus, Volume2, BookOpen, Home, BarChart3, Baby,
+  Moon, Milk, Droplet, Scale, Stethoscope, AlertCircle, Clock, Map, Flower2, Footprints
+} from "lucide-react";
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from "recharts";
+
+/* ============================================================================
+   NID — APP COMPLÈTE V2  (Fil + Roue interactive + 4 phases)
+   ============================================================================ */
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Mulish:wght@600;700;800&display=swap');
+:root{
+  --bg:#EBEEE5;--surface:#FFFFFF;--surface-2:#F8FAF4;--ink:#243029;--muted:#6E7A70;--line:#E1E6DB;
+  --sage:#3C5B49;--sage-2:#557A66;--sage-soft:#DCE7DE;
+  --honey:#DC9B4E;--honey-2:#C5832F;--honey-soft:#F6E7C9;
+  --comfort:#897FA6;--comfort-soft:#ECE7F2;--clay:#CC7355;--clay-soft:#F7E2D8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.nr{font-family:'Mulish',system-ui,sans-serif;color:var(--ink)}
+.sf{font-family:'Fraunces','Georgia',serif}
+.stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(1200px 600px at 15% -10%,#F3EFE2 0,transparent 55%),
+  radial-gradient(900px 700px at 110% 110%,#DDE7DD 0,transparent 50%),#E4E8DC}
+.device{position:relative;width:100%;max-width:434px;height:min(95vh,960px);background:var(--bg);
+  border-radius:38px;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 40px 80px -30px rgba(36,48,41,.45),0 0 0 1px rgba(36,48,41,.06)}
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 16px 116px;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.fade{animation:f .4s cubic-bezier(.2,.7,.2,1)}@keyframes f{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.top{padding:22px 4px 6px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.eb{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage-2);font-weight:800}
+.h1{font-size:25px;line-height:1.12;font-weight:600;margin:4px 0 0;letter-spacing:-.01em}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:700;color:var(--sage);cursor:pointer;flex:none}
+.iconbtn{width:38px;height:38px;border-radius:12px;background:var(--surface);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sage);flex:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px;
+  box-shadow:0 8px 22px -18px rgba(36,48,41,.4)}
+.lbl{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;
+  margin:20px 4px 10px;display:flex;align-items:center;gap:7px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:13px 14px}
+.kpi .k-top{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;font-weight:700}
+.kpi .k-val{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1.05;margin-top:7px}
+.kpi .k-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;border-radius:99px;padding:4px 9px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.opt{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 12px;font-size:13px;cursor:pointer;font-weight:700;color:var(--ink)}
+.opt.on{background:var(--sage);color:#fff;border-color:var(--sage)}
+.btn{appearance:none;border:none;cursor:pointer;font-family:inherit;font-weight:700;border-radius:14px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--sage);color:#fff;padding:14px;font-size:15px;width:100%}
+.btn-s{background:var(--sage-soft);color:var(--sage);padding:11px 14px;font-size:14px}
+.input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:12px 13px;
+  font-family:inherit;font-size:15px;outline:none;color:var(--ink)}
+.input:focus{border-color:var(--sage)}
+.stepper{display:flex;align-items:center;background:var(--bg);border-radius:14px}
+.s-btn{width:38px;height:38px;border:none;background:none;cursor:pointer;font-size:22px;font-weight:800;
+  color:var(--sage);font-family:inherit;display:flex;align-items:center;justify-content:center;border-radius:12px}
+.s-btn:active{background:var(--line)}
+.s-num{min-width:44px;text-align:center;font-size:17px;font-weight:800}
+.s-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.s-row:last-child{margin-bottom:0}
+.s-lbl{font-size:14px;font-weight:700}.s-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.lecture{background:linear-gradient(180deg,#fff,#FBFCF7);border:1px solid var(--line);border-radius:22px;padding:18px;position:relative;overflow:hidden}
+.lecture:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--phase,#3C5B49)}
+.lecture .head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.lecture .head .t{font-family:'Fraunces',serif;font-size:17px;font-weight:600}
+.lecture p{font-size:14.5px;line-height:1.62;color:#34403a;margin:0 0 10px}
+.lecture .listen{display:inline-flex;align-items:center;gap:7px;background:var(--sage-soft);color:var(--sage);
+  border:none;border-radius:12px;padding:9px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.lecture .listen.on{background:var(--sage);color:#fff}
+.phasecard{display:flex;align-items:center;gap:14px;padding:15px;background:var(--surface);border:1px solid var(--line);
+  border-radius:18px;cursor:pointer;margin-bottom:10px}
+.phasecard .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.phasecard.cur{border-color:var(--sage);box-shadow:0 0 0 1px var(--sage)}
+.logrow{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.logbtn{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px 6px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink)}
+.logbtn:active{transform:scale(.96)}
+.logbtn .c{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.tl{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.tl:last-child{border-bottom:none}
+.tl .c{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.tl b{font-size:13.5px}.tl span{font-size:11.5px;color:var(--muted)}
+.wheel-hint{text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;margin:6px 0 0}
+.leg-row{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0}
+.leg-pill{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700}
+.leg-dot{width:9px;height:9px;border-radius:3px;flex:none}
+.fert-track{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
+.fert-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1),background .3s}
+.overlay{position:absolute;inset:0;background:rgba(36,48,41,.42);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:flex-end;animation:f .25s}
+.sheet{background:var(--bg);width:100%;border-radius:26px 26px 0 0;padding:8px 18px 28px;max-height:88%;overflow-y:auto;animation:up .34s cubic-bezier(.2,.7,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.grab{width:40px;height:4px;border-radius:99px;background:var(--line);margin:10px auto 16px}
+.sheet h2{font-family:'Fraunces',serif;font-size:21px;font-weight:700;margin:8px 0 10px}
+.fiche-sec{margin-bottom:11px}
+.fiche-sec h4{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--sage-2);font-weight:800;margin:0 0 4px}
+.fiche-sec p{font-size:14px;line-height:1.58;color:#34403a;margin:0}
+.safe{display:flex;gap:9px;align-items:flex-start;background:var(--clay-soft);border:1px solid #E9C9BC;border-radius:14px;padding:11px 13px;font-size:12.5px;color:#7a3b27;line-height:1.45}
+.note{display:flex;gap:9px;align-items:flex-start;background:var(--honey-soft);border:1px solid #ECD6A8;border-radius:14px;padding:11px 13px;font-size:12.5px;color:#6b4e1d;line-height:1.45}
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);
+  color:#fff;padding:11px 16px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;
+  transition:.3s;z-index:60;display:flex;gap:8px;align-items:center;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:76px;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);display:flex;padding:8px 6px 14px;z-index:30}
+.tab{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;color:var(--muted);font-size:10.5px;font-weight:700;font-family:inherit}
+.tab.active{color:var(--sage)}
+.tab .dot{width:5px;height:5px;border-radius:99px;background:transparent}
+.tab.active .dot{background:var(--honey)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+`;
+
+/* ── Phases Nid (navigation) ─────────────────────────── */
+const PHASES = {
+  preconception:{ key:"preconception", label:"Préconception", short:"Projet bébé", Icon:Sparkles, color:"#7C9A86" },
+  grossesse:    { key:"grossesse",     label:"Grossesse",     short:"Grossesse",   Icon:Flower2,  color:"#DC9B4E" },
+  postpartum:   { key:"postpartum",    label:"Post-partum",   short:"Post-partum", Icon:Heart,    color:"#CC7355" },
+  bebe:         { key:"bebe",          label:"Bébé 0–2 ans",  short:"Bébé",        Icon:Baby,     color:"#557A66" },
+};
+const ORDER = ["preconception","grossesse","postpartum","bebe"];
+
+/* ── Phases du cycle (roue — palette Okabe-Ito daltonisme-safe) ─── */
+const CPH = {
+  menses:    { label:"Règles",           emoji:"🩸", color:"#D55E00", soft:"#FAEDE8" },
+  follicular:{ label:"Folliculaire",     emoji:"💧", color:"#56B4E9", soft:"#E4F3FC" },
+  fertile:   { label:"Fenêtre fertile",  emoji:"🌿", color:"#009E73", soft:"#CCF0E2" },
+  peak:      { label:"Pic d'ovulation",  emoji:"⭐", color:"#E69F00", soft:"#FEF2CC" },
+  luteal:    { label:"Phase lutéale",    emoji:"🌙", color:"#0072B2", soft:"#CCE4F5" },
+};
+
+/* ── Fiches pédagogiques par phase de cycle ─────────────────────── */
+const CINFO = {
+  menses:{ title:"Phase menstruelle", paras:[
+    "Le Jour 1 du cycle marque le début des règles. La muqueuse utérine, non fécondée, est éliminée sous l'effet de la chute des hormones. Durée habituelle : 3 à 7 jours.",
+    "Fatigue, crampes légères et variations d'humeur sont fréquentes et normales. Chaleur sur le bas-ventre, fer et hydratation peuvent aider.",
+    "C'est le bon moment pour penser à une supplémentation en folates (vitamine B9) si un projet de grossesse est envisagé — idéalement 1 à 2 mois avant la conception.",
+  ], refine:"💧 La conception pendant les règles est très peu probable — mais non nulle sur un cycle court, où l'ovulation peut survenir dès la fin des règles." },
+  follicular:{ title:"Phase folliculaire", paras:[
+    "Après les règles, la FSH stimule plusieurs follicules ovariens. L'un d'eux devient dominant et produit des œstrogènes qui épaississent la muqueuse utérine.",
+    "Cette phase est élastique : c'est elle qui explique pourquoi la durée totale du cycle varie d'une personne à l'autre. La phase lutéale, elle, reste constante (~14 j).",
+    "C'est souvent la période de plus grande énergie. La glaire cervicale devient progressivement plus abondante et élastique — signe que l'ovulation approche.",
+  ], refine:"💧 Observer la glaire cervicale : elle devient progressivement plus claire, filante et abondante. C'est l'un des signes les plus fiables de l'approche de l'ovulation." },
+  fertile:{ title:"Fenêtre fertile", paras:[
+    "Les spermatozoïdes peuvent survivre jusqu'à 5 jours dans les voies génitales. Un rapport dans cette période peut donc mener à une fécondation si l'ovulation survient dans les jours suivants.",
+    "La glaire cervicale atteint sa texture la plus fertile : abondante, transparente et filante, semblable à du blanc d'œuf.",
+    "En cas de projet de grossesse, cette fenêtre est l'une des plus favorables. En cas de projet contraceptif, c'est la période qui nécessite la plus grande vigilance.",
+  ], refine:"🔬 Un test d'ovulation urinaire (pic de LH) annonce l'ovulation 24 à 36 h à l'avance. À combiner avec la glaire pour une meilleure fiabilité." },
+  peak:{ title:"Pic d'ovulation", paras:[
+    "Un pic de LH déclenche la libération de l'ovule. Celui-ci ne survit que 12 à 24 heures — c'est le moment de fertilité maximale du cycle.",
+    "Certains signes accompagnent parfois ce moment : légère douleur d'un côté (Mittelschmerz), hausse de libido, glaire maximalement filante.",
+    "Juste après l'ovulation, la progestérone fait monter la température basale de 0,3 à 0,5 °C. Ce plateau la confirme a posteriori — il ne la prédit pas.",
+  ], refine:"🌡 La température basale (prise au réveil, avant de se lever) monte après l'ovulation et reste haute jusqu'aux prochaines règles : c'est la signature du plateau lutéal." },
+  luteal:{ title:"Phase lutéale", paras:[
+    "Le follicule vide se transforme en corps jaune, qui sécrète la progestérone. Cette hormone maintient la muqueuse utérine et fait monter la température basale.",
+    "Cette phase dure de façon remarquablement constante environ 14 jours — c'est pourquoi c'est la durée totale du cycle qui varie, pas cette phase.",
+    "Si aucune grossesse ne s'amorce, le corps jaune se résorbe, les hormones chutent et les règles débutent. Le cycle recommence.",
+  ], refine:"💊 Le SPM peut survenir en fin de phase lutéale : seins sensibles, ballonnements, irritabilité. Tout cela est hormonal et normal — il existe des solutions si ces symptômes sont intenses." },
+};
+
+/* ── Géométrie de la roue ────────────────────────────── */
+const GW = { cx:200, cy:200, rOut:168, rMid:116, rIn:88, rLabel:144, gap:1.4 };
+
+/* ── Helpers SVG ─────────────────────────────────────── */
+function wPt(r, deg){ const a=(deg-90)*Math.PI/180; return {x:GW.cx+r*Math.cos(a), y:GW.cy+r*Math.sin(a)}; }
+function wF(v){ return v.toFixed(2); }
+function wArc(r1,r2,a1,a2){
+  const g=GW.gap/2, p1=wPt(r2,a1+g), p2=wPt(r2,a2-g), p3=wPt(r1,a2-g), p4=wPt(r1,a1+g);
+  const lg=(a2-a1)>180?1:0;
+  return `M${wF(p1.x)},${wF(p1.y)} A${r2},${r2},0,${lg},1,${wF(p2.x)},${wF(p2.y)} L${wF(p3.x)},${wF(p3.y)} A${r1},${r1},0,${lg},0,${wF(p4.x)},${wF(p4.y)}Z`;
+}
+
+/* ── Calculs ─────────────────────────────────────────── */
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function daysBetween(a,b){ return Math.floor((new Date(b)-new Date(a))/864e5); }
+function fmt(d){ return new Date(d).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}); }
+function hhmm(ts){ const d=new Date(ts); return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0"); }
+const isoToday=()=>new Date().toISOString().slice(0,10);
+const isoOffset=(n)=>{ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const isoMonthsAgo=(n)=>{ const d=new Date(); d.setMonth(d.getMonth()-n); return d.toISOString().slice(0,10); };
+const persist=(k,v)=>{ if(typeof window!=="undefined"&&window.storage) try{window.storage.set(k,JSON.stringify(v))}catch(e){} };
+
+function calcPreco({ lastPeriod, cycleLen, periodLen }){
+  const N=cycleLen||28, P=periodLen||5;
+  const ovDay=N-14;
+  const fStart=Math.max(P+1,ovDay-5), peakS=Math.max(fStart,ovDay-1), fEnd=Math.min(N,ovDay+1);
+  const today=new Date(), lp=new Date(lastPeriod);
+  const elapsed=Math.floor((today-lp)/864e5);
+  const dayIn=((elapsed%N)+N)%N+1;
+  const cycles=Math.floor(Math.max(0,elapsed)/N);
+  const nextLP=addDays(lastPeriod,(cycles+1)*N);
+  const nextOv=addDays(nextLP,-14);
+  const dToOv=Math.round((nextOv-today)/864e5), dToPer=Math.round((nextLP-today)/864e5);
+  let todayPh;
+  if(dayIn<=P)todayPh="menses";
+  else if(dayIn<fStart)todayPh="follicular";
+  else if(dayIn>=peakS&&dayIn<=fEnd)todayPh="peak";
+  else if(dayIn>=fStart&&dayIn<peakS)todayPh="fertile";
+  else todayPh="luteal";
+  const d=dayIn-ovDay; let fPct,fLabel,fColor;
+  if(dayIn<=P){fPct=2;fLabel="Très faible";fColor=CPH.follicular.color;}
+  else if(dayIn<fStart){fPct=5;fLabel="Faible";fColor=CPH.follicular.color;}
+  else if(d<=-3){fPct=38;fLabel="Élevée";fColor=CPH.fertile.color;}
+  else if(d>=-2&&d<=0){fPct=94;fLabel="Maximale ⭐";fColor=CPH.peak.color;}
+  else if(d===1){fPct=16;fLabel="Décroissante";fColor=CPH.luteal.color;}
+  else{fPct=2;fLabel="Faible";fColor=CPH.luteal.color;}
+  return {N,P,ovDay,fStart,peakS,fEnd,dayIn,dToOv,dToPer,todayPh,fPct,fLabel,fColor,nextOv,nextLP};
+}
+function phaseFor(day,c){
+  if(day<=c.P)return "menses";
+  if(day<c.fStart)return "follicular";
+  if(day>=c.peakS&&day<=c.fEnd)return "peak";
+  if(day>=c.fStart&&day<c.peakS)return "fertile";
+  return "luteal";
+}
+function calcGross({dpa}){
+  const dt=daysBetween(new Date(),dpa); let sa=41-Math.round(dt/7); sa=Math.min(41,Math.max(4,sa));
+  const tri=sa<=14?1:sa<=27?2:3, col=tri===1?"#7C9A86":tri===2?"#DC9B4E":"#CC7355";
+  const fruits={6:"lentille",8:"framboise",10:"kumquat",12:"citron vert",14:"citron",16:"avocat",18:"poivron",20:"banane",22:"papaye",24:"épi de maïs",26:"laitue",28:"aubergine",30:"courgette",32:"chou-fleur",34:"melon",36:"salade",38:"poireau",40:"pastèque"};
+  const fk=Object.keys(fruits).map(Number); let bk=fk[0]; for(const k of fk)if(k<=sa)bk=k;
+  return {sa,tri,col,weeksLeft:Math.max(0,Math.round(dt/7)),pct:Math.min(100,Math.round(sa/41*100)),fruit:fruits[bk]};
+}
+function ageInfo(birth){
+  const days=Math.max(0,daysBetween(birth,new Date())), months=Math.min(24,Math.floor(days/30.44));
+  let label; if(days<14)label=`${days} jours`; else if(months<1)label=`${Math.floor(days/7)} semaines`;
+  else{const w=Math.floor((days-months*30.44)/7);label=`${months} mois${w>0?` ${w} sem.`:""}`;}
+  return {days,months,label};
+}
+function wakeWin(m){if(m<1)return 50;if(m<3)return 75;if(m<5)return 105;if(m<7)return 135;if(m<9)return 165;if(m<12)return 210;return 270;}
+function ppInfo(d){ const days=Math.max(0,daysBetween(d,new Date())); return {days,weeks:Math.floor(days/7),label:days<14?`J+${days}`:`${Math.floor(days/7)} semaines`}; }
+
+/* ── Lectures rédigées ───────────────────────────────── */
+function lecturePreco(c){
+  const parts=[];
+  if(c.todayPh==="menses") parts.push(`Tu es à J${c.dayIn}, en phase menstruelle — début d'un nouveau cycle. Repos et hygiène de vie (sommeil, folates) sont tes alliés. La fenêtre fertile arrive vers le J${c.fStart}.`);
+  else if(c.todayPh==="follicular") parts.push(`Tu es à J${c.dayIn}, en phase folliculaire. L'ovulation est estimée ${c.dToOv===0?"aujourd'hui":`dans ${c.dToOv} j`} — ta fenêtre fertile s'ouvre vers le J${c.fStart}.`);
+  else if(c.todayPh==="peak") parts.push(`Tu es à J${c.dayIn} : ovulation estimée, pic de fertilité. Les 48 h à venir sont les plus favorables si tu as un projet bébé.`);
+  else if(c.todayPh==="fertile") parts.push(`Tu es à J${c.dayIn}, dans ta fenêtre fertile — fertilité élevée. L'ovulation est prévue ${c.dToOv===0?"aujourd'hui":`dans ${c.dToOv} j`}.`);
+  else parts.push(`Tu es à J${c.dayIn}, en phase lutéale. Tes prochaines règles sont attendues vers le ${fmt(c.nextLP)} (dans ${c.dToPer} j).`);
+  return parts;
+}
+function lectureGross(g,dpa){
+  const f=g.fruit;
+  return [`Tu es à ${g.sa} SA${g.tri===1?", au 1er trimestre":g.tri===2?", au 2e trimestre — souvent le plus serein":", dans la dernière ligne droite"}. Bébé a la taille d'${"aeiouéâ".includes(f[0])?"une":"un"} ${f}.`,
+    `Il te reste environ ${g.weeksLeft} semaine${g.weeksLeft>1?"s":""} avant le terme prévu (${fmt(dpa)}). Écoute ton corps, et surveille les mouvements de bébé au 3e trimestre.`];
+}
+function lecturePP(pp){
+  return [`Tu es à ${pp.label} après l'accouchement. La fatigue, l'émotivité et les bouleversements sont normaux — ton corps et ton cœur s'ajustent.`,
+    `Prendre de petits moments pour toi fait partie du soin. Si le mal-être s'installe au-delà de deux semaines, tu n'es pas seule : en parler est un acte de soin.`];
+}
+function lectureBebe(age,sleepMin,feeds,nextNap,sleeping){
+  const h=Math.floor(sleepMin/60),mn=sleepMin%60; const p=[];
+  if(age.months<4)p.push(`${age.label} : les rythmes se mettent en place doucement. Observe ses signes de fatigue plutôt qu'une horloge.`);
+  else if(age.months<13)p.push(`${age.label} : il explore, attrape, babille. Le lait reste central, en complément des repas.`);
+  else p.push(`${age.label} : il marche, découvre et s'affirme. Les routines le rassurent.`);
+  const o=[]; if(sleepMin>0)o.push(`${h>0?`${h} h${mn>0?` ${mn}`:""}`:`${mn} min`} de sommeil`); if(feeds>0)o.push(`${feeds} repas`);
+  if(o.length)p.push(`Aujourd'hui : ${o.join(", ")}.`);
+  p.push(sleeping?`Il dort en ce moment — profites-en.`:`Prochaine sieste estimée vers ${nextNap}.`);
+  return p;
+}
+
+/* ── Petits composants ───────────────────────────────── */
+const KPI=({icon:Ic,label,val,sub,color})=>(
+  <div className="kpi">
+    <div className="k-top"><Ic size={14} color={color||"var(--sage-2)"}/> {label}</div>
+    <div className="k-val" style={color?{color}:null}>{val}</div>
+    {sub&&<div className="k-sub">{sub}</div>}
+  </div>
+);
+
+function Fil({phase,big,onPick}){
+  const idx=ORDER.indexOf(phase);
+  const W=360,H=big?96:72,pad=34,y=big?52:44;
+  const xs=ORDER.map((_,i)=>pad+i*((W-2*pad)/3));
+  const path=`M ${xs[0]} ${y} C ${xs[0]+40} ${y-26}, ${xs[1]-40} ${y+26}, ${xs[1]} ${y} S ${xs[2]-40} ${y-26}, ${xs[2]} ${y} S ${xs[3]-40} ${y+26}, ${xs[3]} ${y}`;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{display:"block"}}>
+      <path d={path} fill="none" stroke="var(--line)" strokeWidth="3" strokeLinecap="round"/>
+      <path d={path} fill="none" stroke="var(--sage)" strokeWidth="3" strokeLinecap="round" strokeDasharray="600" strokeDashoffset={600-(idx/3)*600} style={{transition:"stroke-dashoffset .6s"}}/>
+      {ORDER.map((p,i)=>{const a=i===idx,dn=i<idx,P=PHASES[p];
+        return(<g key={p} style={{cursor:onPick?"pointer":"default"}} onClick={()=>onPick&&onPick(p)}>
+          <circle cx={xs[i]} cy={y} r={a?13:8} fill={a?"var(--sage)":dn?"var(--sage-soft)":"#fff"} stroke={a?"var(--sage)":"var(--line)"} strokeWidth="2"/>
+          {a&&<circle cx={xs[i]} cy={y} r={19} fill="none" stroke="var(--honey)" strokeWidth="2" opacity=".5"/>}
+          <text x={xs[i]} y={H-6} textAnchor="middle" fontFamily="Mulish" fontSize="10.5" fontWeight={a?700:600} fill={a?"var(--ink)":"var(--muted)"}>{P.short}</text>
+        </g>);
+      })}
+    </svg>
+  );
+}
+
+function LectureCard({lines,color}){
+  const [on,setOn]=useState(false);
+  const speak=useCallback(()=>{
+    try{ const s=window.speechSynthesis; if(!s)return; if(on){s.cancel();setOn(false);return;}
+      const u=new SpeechSynthesisUtterance(lines.join(" ")); u.lang="fr-FR"; u.onend=()=>setOn(false); s.cancel(); s.speak(u); setOn(true);
+    }catch(e){}
+  },[lines,on]);
+  useEffect(()=>()=>{try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}},[]);
+  return (
+    <div className="lecture" style={{"--phase":color}}>
+      <div className="head"><Leaf size={18} color={color}/><span className="t">Là où vous en êtes</span></div>
+      {lines.map((t,i)=><p key={i}>{t}</p>)}
+      <button className={`listen ${on?"on":""}`} onClick={speak}><Volume2 size={15}/> {on?"Arrêter":"Écouter"}</button>
+    </div>
+  );
+}
+
+/* ── ROUE INTERACTIVE ────────────────────────────────── */
+function CycleWheel({ cycleLen, periodLen, lastPeriod, onCycleChange, onPhaseTap }){
+  const svgRef=useRef(null);
+  const live=useRef({cycleLen,onCycleChange});
+  live.current.cycleLen=cycleLen; live.current.onCycleChange=onCycleChange;
+
+  useEffect(()=>{
+    const svg=svgRef.current; if(!svg)return;
+    let dragging=false, startA=0, startLen=28;
+    const getA=(e)=>{
+      const r=svg.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+      const {clientX,clientY}=e.touches?e.touches[0]:e;
+      return Math.atan2(clientY-cy,clientX-cx)*180/Math.PI;
+    };
+    const onStart=(e)=>{
+      const r=svg.getBoundingClientRect(), sc=r.width/400;
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      const {clientX,clientY}=e.touches?e.touches[0]:e;
+      const dist=Math.hypot(clientX-cx,clientY-cy);
+      if(dist<GW.rMid*sc||dist>(GW.rOut+28)*sc)return;
+      e.preventDefault(); dragging=true; startA=getA(e); startLen=live.current.cycleLen;
+    };
+    const onMove=(e)=>{
+      if(!dragging)return; e.preventDefault();
+      let d=getA(e)-startA; if(d>180)d-=360; if(d<-180)d+=360;
+      const nl=Math.max(21,Math.min(40,startLen+Math.round(d/(360/startLen))));
+      if(nl!==live.current.cycleLen)live.current.onCycleChange(nl);
+    };
+    const onEnd=()=>{dragging=false;};
+    svg.addEventListener("touchstart",onStart,{passive:false});
+    svg.addEventListener("touchmove",onMove,{passive:false});
+    svg.addEventListener("touchend",onEnd);
+    svg.addEventListener("mousedown",onStart);
+    window.addEventListener("mousemove",onMove);
+    window.addEventListener("mouseup",onEnd);
+    return()=>{
+      svg.removeEventListener("touchstart",onStart);
+      svg.removeEventListener("touchmove",onMove);
+      svg.removeEventListener("touchend",onEnd);
+      svg.removeEventListener("mousedown",onStart);
+      window.removeEventListener("mousemove",onMove);
+      window.removeEventListener("mouseup",onEnd);
+    };
+  },[]);
+
+  const c=useMemo(()=>calcPreco({lastPeriod,cycleLen,periodLen}),[lastPeriod,cycleLen,periodLen]);
+  const step=360/cycleLen;
+  const fs=cycleLen<=24?11:cycleLen<=28?10:cycleLen<=35?9:8;
+  const P=CPH[c.todayPh];
+
+  const segments=useMemo(()=>Array.from({length:cycleLen},(_,i)=>{
+    const day=i+1, a1=i*step, a2=(i+1)*step, ph=phaseFor(day,c);
+    return {day,a1,a2,ph,isToday:day===c.dayIn};
+  }),[cycleLen,c,step]);
+
+  const todayMark=useMemo(()=>{
+    const ta=(c.dayIn-0.5)*step;
+    const tm=wPt(GW.rOut+20,ta), tl=wPt(GW.rOut+11,ta-3.5), tr=wPt(GW.rOut+11,ta+3.5);
+    return `${wF(tm.x)},${wF(tm.y)} ${wF(tl.x)},${wF(tl.y)} ${wF(tr.x)},${wF(tr.y)}`;
+  },[c.dayIn,step]);
+
+  const ovMark=useMemo(()=>wPt(GW.rOut+14,(c.ovDay-0.5)*step),[c.ovDay,step]);
+
+  return (
+    <svg ref={svgRef} viewBox="0 0 400 400" style={{width:"100%",display:"block",touchAction:"none",userSelect:"none"}} role="img" aria-label="Roue du cycle menstruel">
+      <defs>
+        <filter id="cwS"><feDropShadow dx="0" dy="4" stdDeviation="10" floodColor="#1C2820" floodOpacity=".18"/></filter>
+        <filter id="cwG"><feGaussianBlur stdDeviation="5"/></filter>
+      </defs>
+      <circle cx={GW.cx} cy={GW.cy} r={GW.rOut+6} fill="rgba(235,238,229,.55)"/>
+      {/* halos fenêtre fertile */}
+      {segments.filter(s=>s.day>=c.fStart&&s.day<=c.fEnd).map(s=>(
+        <path key={`g${s.day}`} d={wArc(GW.rMid-4,GW.rOut+10,s.a1,s.a2)} fill={CPH[s.ph].color} fillOpacity=".2" filter="url(#cwG)" style={{pointerEvents:"none"}}/>
+      ))}
+      {/* segments */}
+      {segments.map(s=>(
+        <path key={s.day} d={wArc(GW.rMid,GW.rOut,s.a1,s.a2)}
+          fill={CPH[s.ph].color} fillOpacity={s.isToday?1:.8}
+          stroke={s.isToday?"#fff":"none"} strokeWidth={s.isToday?2.5:0}
+          style={{cursor:"pointer"}}
+          onClick={()=>onPhaseTap(s.ph,s.day)}/>
+      ))}
+      {/* TOUS les numéros de jours */}
+      {segments.map(s=>{
+        const pos=wPt(GW.rLabel,(s.day-0.5)*step);
+        return (
+          <text key={`n${s.day}`} x={wF(pos.x)} y={wF(pos.y)}
+            textAnchor="middle" dominantBaseline="middle"
+            fill={s.isToday?"#fff":"rgba(255,255,255,.88)"}
+            fontSize={s.isToday?fs+1.5:fs}
+            fontWeight={s.isToday?800:700}
+            fontFamily="'Mulish',-apple-system,BlinkMacSystemFont,sans-serif"
+            style={{pointerEvents:"none"}}>
+            {s.day}
+          </text>
+        );
+      })}
+      {/* disque central */}
+      <circle cx={GW.cx} cy={GW.cy} r={GW.rIn} fill="white" filter="url(#cwS)"/>
+      {/* contenu centre */}
+      <text x={GW.cx} y={GW.cy-34} textAnchor="middle" fontSize="24" style={{pointerEvents:"none"}}>{P.emoji}</text>
+      <text x={GW.cx} y={GW.cy+7} textAnchor="middle" dominantBaseline="middle"
+        fill={P.color} fontFamily="'Fraunces','Georgia',serif" fontSize="34" fontWeight="700" letterSpacing="-1"
+        style={{pointerEvents:"none"}}>J{c.dayIn}</text>
+      <text x={GW.cx} y={GW.cy+28} textAnchor="middle" dominantBaseline="middle"
+        fill="#6E7A70" fontFamily="'Mulish',-apple-system,sans-serif" fontSize="10" fontWeight="800" letterSpacing=".08em"
+        style={{pointerEvents:"none"}}>{P.label.toUpperCase()}</text>
+      <text x={GW.cx} y={GW.cy+46} textAnchor="middle" dominantBaseline="middle"
+        fill="#3C5B49" fontFamily="'Mulish',-apple-system,sans-serif" fontSize="10.5" fontWeight="700"
+        style={{pointerEvents:"none"}}>{cycleLen} j · règles {periodLen} j</text>
+      {/* marqueur aujourd'hui */}
+      <polygon points={todayMark} fill="#1C2820" style={{pointerEvents:"none"}}/>
+      {/* étoile ovulation */}
+      <text x={wF(ovMark.x)} y={wF(ovMark.y)} textAnchor="middle" dominantBaseline="middle" fontSize="13" style={{pointerEvents:"none"}}>⭐</text>
+    </svg>
+  );
+}
+
+/* ── Fiche par phase (bottom sheet) ─────────────────── */
+function PhaseSheet({ phaseId, day, cycleCalc, onClose }){
+  if(!phaseId) return null;
+  const ph=CPH[phaseId], info=CINFO[phaseId];
+  const c=cycleCalc;
+  let range="";
+  if(phaseId==="menses")     range=`Jours 1 à ${c.P}`;
+  else if(phaseId==="follicular") range=`Jours ${c.P+1} à ${c.fStart-1}`;
+  else if(phaseId==="fertile")    range=`Jours ${c.fStart} à ${c.peakS-1} · fertilité élevée`;
+  else if(phaseId==="peak")       range=`Jours ${c.peakS} à ${c.fEnd} · fertilité maximale`;
+  else range=`Jours ${c.fEnd+1} à ${c.N} · ~14 j constants`;
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="sheet" onClick={e=>e.stopPropagation()}>
+        <div className="grab"/>
+        <div style={{width:52,height:52,borderRadius:16,background:ph.soft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,marginBottom:12}}>{ph.emoji}</div>
+        <h2 style={{color:ph.color}}>{info.title}</h2>
+        <div style={{fontSize:13,color:"var(--muted)",fontWeight:700,marginBottom:14}}>Jour {day} · {range}</div>
+        {info.paras.map((p,i)=><p key={i} style={{fontSize:14.5,lineHeight:1.65,color:"#2e3d34",marginBottom:10}}>{p}</p>)}
+        <div style={{background:"#E5F5EE",border:"1px solid #A8DABC",borderRadius:14,padding:"11px 13px",fontSize:13,color:"#145c36",lineHeight:1.5,marginTop:12}}>{info.refine}</div>
+        <div className="note" style={{marginTop:10}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Estimation statistique. Ne remplace pas un suivi médical. La méthode calendaire seule n'est pas une contraception fiable.</span></div>
+        <button className="btn btn-p" style={{marginTop:16}} onClick={onClose}>Fermer</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── DASHBOARDS ──────────────────────────────────────── */
+function DashPreco({ profile, setProfile, onPhaseTap, flash }){
+  const cycleLen=profile.cycleLen||28, periodLen=profile.periodLen||5;
+  const c=useMemo(()=>calcPreco({lastPeriod:profile.lastPeriod,cycleLen,periodLen}),[profile.lastPeriod,cycleLen,periodLen]);
+  const lines=useMemo(()=>lecturePreco(c),[c]);
+  const setCycle=n=>setProfile(p=>({...p,cycleLen:n}));
+  const setPeriod=n=>setProfile(p=>({...p,periodLen:n}));
+  return (<>
+    <div style={{margin:"6px 0 0",touchAction:"none"}}>
+      <CycleWheel cycleLen={cycleLen} periodLen={periodLen} lastPeriod={profile.lastPeriod}
+        onCycleChange={setCycle} onPhaseTap={onPhaseTap}/>
+    </div>
+    <p className="wheel-hint">Glisser le bord · Toucher une zone pour l'expliquer</p>
+    <div className="leg-row">
+      {Object.values(CPH).map(p=>(
+        <div key={p.label} className="leg-pill"><div className="leg-dot" style={{background:p.color}}/>{p.emoji} {p.label}</div>
+      ))}
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
+    <LectureCard lines={lines} color="#7C9A86"/>
+    <div className="lbl"><TrendingUp size={14}/> Indicateurs</div>
+    <div className="kpis">
+      <KPI icon={Activity} label="Phase" val={CPH[c.todayPh].label} color={CPH[c.todayPh].color}/>
+      <KPI icon={Sparkles} label="Ovulation" val={c.dToOv>0?`J−${c.dToOv}`:c.dToOv===0?"Auj.":`+${Math.abs(c.dToOv)}j`} sub={`le ${fmt(c.nextOv)}`} color="var(--honey-2)"/>
+      <KPI icon={Heart} label="Fenêtre fertile" val={`J${c.fStart}–J${c.fEnd}`} sub={`${c.fEnd-c.fStart+1} jours estimés`} color="var(--clay)"/>
+      <KPI icon={Droplet} label="Prochaines règles" val={c.dToPer<=0?"Bientôt":`${c.dToPer} j`} sub={`le ${fmt(c.nextLP)}`}/>
+    </div>
+    <div className="lbl"><Sparkles size={14}/> Probabilité de conception</div>
+    <div className="card">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <span style={{fontSize:13,fontWeight:700,color:"var(--muted)"}}>Aujourd'hui</span>
+        <span style={{fontSize:14,fontWeight:800,color:c.fColor}}>{c.fLabel}</span>
+      </div>
+      <div className="fert-track"><div className="fert-fill" style={{width:c.fPct+"%",background:c.fColor}}/></div>
+      <div style={{fontSize:11.5,color:"var(--muted)",marginTop:6,textAlign:"center"}}>Estimation indicative, jamais une méthode contraceptive.</div>
+    </div>
+    <div className="lbl"><Settings size={14}/> Paramètres</div>
+    <div className="card">
+      <div className="s-row">
+        <div><div className="s-lbl">1ᵉʳ jour des dernières règles</div></div>
+        <input type="date" style={{border:"1px solid var(--line)",background:"var(--bg)",borderRadius:12,padding:"9px 12px",fontSize:14,fontWeight:700,fontFamily:"inherit",color:"var(--ink)",outline:"none",maxWidth:155}}
+          value={profile.lastPeriod||isoOffset(-11)} onChange={e=>setProfile(p=>({...p,lastPeriod:e.target.value}))}/>
+      </div>
+      <div className="s-row">
+        <div><div className="s-lbl">Durée du cycle</div><div className="s-sub">Lutéale ≈ 14 j · fixe</div></div>
+        <div className="stepper">
+          <button className="s-btn" onClick={()=>setCycle(Math.max(21,cycleLen-1))}>−</button>
+          <div className="s-num">{cycleLen}</div>
+          <button className="s-btn" onClick={()=>setCycle(Math.min(40,cycleLen+1))}>+</button>
+        </div>
+      </div>
+      <div className="s-row">
+        <div><div className="s-lbl">Durée des règles</div></div>
+        <div className="stepper">
+          <button className="s-btn" onClick={()=>setPeriod(Math.max(2,periodLen-1))}>−</button>
+          <div className="s-num">{periodLen}</div>
+          <button className="s-btn" onClick={()=>setPeriod(Math.min(10,periodLen+1))}>+</button>
+        </div>
+      </div>
+    </div>
+    <div className="note" style={{marginTop:14}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Estimations calendaires indicatives. En cas de difficulté à concevoir (12 mois, ou 6 mois après 35 ans), consultez un professionnel.</span></div>
+  </>);
+}
+
+function DashGross({ profile, flash }){
+  const g=useMemo(()=>calcGross(profile),[profile]);
+  const lines=useMemo(()=>lectureGross(g,profile.dpa),[g,profile]);
+  const f=g.fruit; const [kick,setKick]=useState(0);
+  return (<>
+    <div className="card" style={{marginTop:6}}>
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <div style={{width:62,height:62,borderRadius:18,background:g.col+"22",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:"none"}}>
+          <div style={{fontFamily:"Fraunces,serif",fontSize:23,fontWeight:600,color:g.col,lineHeight:1}}>{g.sa}</div><div style={{fontSize:10,fontWeight:700,color:g.col}}>SA</div>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:15}}>Bébé a la taille d'{"aeiouéâ".includes(f[0])?"une":"un"} {f}</div>
+          <div style={{fontSize:12.5,color:"var(--muted)"}}>{g.tri===1?"1er":g.tri===2?"2e":"3e"} trimestre · {g.pct}%</div>
+        </div>
+      </div>
+      <div style={{height:8,background:"var(--line)",borderRadius:99,marginTop:14,overflow:"hidden"}}><div style={{height:"100%",width:`${g.pct}%`,background:g.col,borderRadius:99}}/></div>
+      <div style={{fontSize:11.5,color:"var(--muted)",marginTop:8,textAlign:"center"}}>{g.weeksLeft>0?`Encore ~${g.weeksLeft} sem. · terme le ${fmt(profile.dpa)}`:"Terme atteint"}</div>
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture de la semaine</div>
+    <LectureCard lines={lines} color={g.col}/>
+    <div className="lbl"><TrendingUp size={14}/> Indicateurs</div>
+    <div className="kpis">
+      <KPI icon={CalendarDays} label="Avancement" val={`${g.sa} SA`} sub={`${g.pct}%`} color={g.col}/>
+      <KPI icon={Activity} label="Trimestre" val={`T${g.tri}`}/>
+      <KPI icon={Baby} label="Avant terme" val={`${g.weeksLeft} sem.`} sub={`le ${fmt(profile.dpa)}`} color="var(--clay)"/>
+      <KPI icon={Footprints} label="Mouvements" val={`${kick}`} sub="aujourd'hui"/>
+    </div>
+    <div className="lbl"><Footprints size={14}/> Compteur de mouvements</div>
+    <div className="card">
+      <button className="btn" style={{width:"100%",background:"var(--sage)",color:"#fff",flexDirection:"column",padding:20,gap:4}} onClick={()=>setKick(k=>k+1)}>
+        <span style={{fontFamily:"Fraunces,serif",fontSize:38,lineHeight:1}}>{kick}</span><span style={{fontSize:12,fontWeight:700}}>Toucher à chaque mouvement</span>
+      </button>
+      <button className="btn btn-s" style={{width:"100%",marginTop:10}} onClick={()=>{flash(`${kick} mouvements`);setKick(0);}}>Terminer la session</button>
+    </div>
+    <div className="safe" style={{marginTop:14}}><AlertCircle size={16} style={{flex:"none",marginTop:1}}/><span>Saignements, douleurs intenses, fièvre ou baisse des mouvements : contactez votre sage-femme ou la maternité. Urgence : 15.</span></div>
+  </>);
+}
+
+const MOODS=[["😞","Difficile"],["😐","Mitigé"],["🙂","Ça va"],["😊","Bien"]];
+function DashPP({ profile, flash }){
+  const pp=useMemo(()=>ppInfo(profile.deliveryDate),[profile]);
+  const lines=useMemo(()=>lecturePP(pp),[pp]);
+  const [mood,setMood]=useState(null);
+  const [feeds,setFeeds]=useState(0);
+  const moodData=[3,2,2,3,2,3,3].map((v,i)=>({d:["L","M","M","J","V","S","D"][i],m:v}));
+  return (<>
+    <div className="card" style={{marginTop:6,textAlign:"center"}}>
+      <div className="eb" style={{color:"#CC7355"}}>Après l'accouchement</div>
+      <div style={{fontFamily:"Fraunces,serif",fontSize:34,fontWeight:600,margin:"8px 0"}}>{pp.label}</div>
+      <div style={{fontSize:13,color:"var(--muted)"}}>Un jour à la fois — vous faites au mieux.</div>
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
+    <LectureCard lines={lines} color="#CC7355"/>
+    <div className="lbl"><Heart size={14}/> Votre humeur aujourd'hui</div>
+    <div className="card"><div style={{display:"flex",gap:8}}>
+      {MOODS.map(([e,l])=>(<button key={l} style={{flex:1,cursor:"pointer",textAlign:"center",padding:"12px 4px",border:mood===l?"1px solid var(--sage)":"1px solid var(--line)",borderRadius:16,background:mood===l?"var(--sage-soft)":""}} onClick={()=>{setMood(l);flash("Humeur notée");}}>
+        <div style={{fontSize:24}}>{e}</div><div style={{fontSize:11,marginTop:4,fontWeight:700}}>{l}</div></button>))}
+    </div></div>
+    <div className="lbl"><TrendingUp size={14}/> Tendance d'humeur</div>
+    <div className="card"><div style={{height:110}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={moodData} margin={{top:8,right:6,left:-30,bottom:0}}>
+          <XAxis dataKey="d" tick={{fontSize:11,fill:"#6E7A70"}} axisLine={false} tickLine={false}/>
+          <YAxis domain={[0,3]} tick={false} axisLine={false} tickLine={false} width={10}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--line)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[MOODS[v]?MOODS[v][1]:v,"Humeur"]} labelStyle={{display:"none"}}/>
+          <Line type="monotone" dataKey="m" stroke="#897FA6" strokeWidth={2.5} dot={{r:3,fill:"#897FA6"}}/>
+        </LineChart>
+      </ResponsiveContainer>
+    </div></div>
+    <div className="lbl"><Milk size={14}/> Nourrissage</div>
+    <div className="card"><div className="seg">
+      <div className="opt" onClick={()=>{setFeeds(f=>f+1);flash("Tétée notée");}}>+ Tétée ({feeds})</div>
+      <div className="opt" onClick={()=>{setFeeds(f=>f+1);flash("Biberon noté");}}>+ Biberon</div>
+    </div></div>
+    <div className="safe" style={{marginTop:14}}><Heart size={16} style={{flex:"none",marginTop:1}}/><span>Si la tristesse s'installe au-delà de deux semaines, ou en cas de pensées sombres : 3114 (souffrance psychique), votre médecin, ou le 15 en urgence.</span></div>
+  </>);
+}
+
+const MEDW={0:3.3,1:4.5,2:5.6,3:6.4,4:7,5:7.5,6:7.9,7:8.3,8:8.6,9:8.9,10:9.2,11:9.4,12:9.6,15:10.3,18:10.9,21:11.5,24:12.2};
+const WKEYS=Object.keys(MEDW).map(Number);
+function medW(m,sex){const f=sex==="f"?0.96:1;if(m<=0)return MEDW[0]*f;if(m>=24)return MEDW[24]*f;let lo=0,hi=24;for(let i=0;i<WKEYS.length-1;i++){if(m>=WKEYS[i]&&m<=WKEYS[i+1]){lo=WKEYS[i];hi=WKEYS[i+1];break;}}return(MEDW[lo]+(MEDW[hi]-MEDW[lo])*((m-lo)/(hi-lo)))*f;}
+
+function DashBebe({ profile, flash }){
+  const age=useMemo(()=>ageInfo(profile.babyBirth),[profile]);
+  const [events,setEvents]=useState([]);
+  const [sleep,setSleep]=useState({active:false,startedAt:null,lastWake:null});
+  const [cc,setCc]=useState(false);
+  useEffect(()=>{(async()=>{try{if(window.storage){const e=await window.storage.get("nidc_bebe_ev_"+isoToday());if(e)setEvents(JSON.parse(e.value));const s=await window.storage.get("nidc_bebe_sleep");if(s)setSleep(JSON.parse(s.value));}}catch(e){}})()},[]);
+  const saveEv=(e)=>{setEvents(e);persist("nidc_bebe_ev_"+isoToday(),e);};
+  const saveSl=(s)=>{setSleep(s);persist("nidc_bebe_sleep",s);};
+  const feeds=events.filter(e=>e.type==="repas"), couches=events.filter(e=>e.type==="couche");
+  const sleepMin=events.filter(e=>e.type==="sommeil").reduce((a,e)=>a+(e.dur||0),0);
+  const nextNap=sleep.active?null:hhmm((sleep.lastWake||Date.now())+wakeWin(age.months)*60000);
+  const lines=useMemo(()=>lectureBebe(age,sleepMin,feeds.length,nextNap,sleep.active),[age,sleepMin,feeds,nextNap,sleep]);
+  const logFeed=(s)=>{saveEv([...events,{type:"repas",sub:s,time:Date.now()}]);flash(`${s} noté`);};
+  const logCouche=(s)=>{saveEv([...events,{type:"couche",sub:s,time:Date.now()}]);setCc(false);flash(`Couche (${s})`);};
+  const toggleSleep=()=>{ if(sleep.active){const dur=Math.max(1,Math.round((Date.now()-sleep.startedAt)/60000));saveEv([...events,{type:"sommeil",time:sleep.startedAt,dur}]);saveSl({active:false,startedAt:null,lastWake:Date.now()});flash(`Sommeil : ${dur} min`);}else{saveSl({...sleep,active:true,startedAt:Date.now()});flash("Sommeil démarré");} };
+  const sleepWeek=[12.5,13.1,11.8,12.9,13.4,12.2].map((h,i)=>({d:["L","M","M","J","V","S"][i],h})).concat([{d:"Auj",h:Math.round(sleepMin/60*10)/10}]);
+  const curve=[];for(let m=0;m<=24;m++){const md=medW(m,profile.babySex||"g"),sd=md*.11;curve.push({m,p3:Math.round((md-1.88*sd)*10)/10,band:Math.round(3.76*sd*10)/10,p50:Math.round(md*10)/10});}
+  const curveData=curve.map(r=>({...r,enfant:r.m===age.months?Math.round(medW(age.months,profile.babySex||"g")*10)/10:null}));
+  const evIcon=(t)=>t==="repas"?Milk:t==="couche"?Droplet:Moon, evCol=(t)=>t==="repas"?"var(--honey-2)":t==="couche"?"var(--comfort)":"var(--sage)";
+  return (<>
+    <div className="card" style={{marginTop:6,textAlign:"center"}}>
+      <div className="eb" style={{color:"#557A66"}}>{profile.name||"Votre bébé"}</div>
+      <div style={{fontFamily:"Fraunces,serif",fontSize:34,fontWeight:600,margin:"8px 0"}}>{age.label}</div>
+      <div style={{fontSize:13,color:"var(--muted)"}}>Chaque jour, un peu plus grand.</div>
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
+    <LectureCard lines={lines} color="#557A66"/>
+    <div className="lbl"><TrendingUp size={14}/> Aujourd'hui</div>
+    <div className="kpis">
+      <KPI icon={Moon} label="Sommeil" val={`${Math.floor(sleepMin/60)} h ${sleepMin%60}`} sub="cumulé" color="var(--sage)"/>
+      <KPI icon={Milk} label="Repas" val={`${feeds.length}`} sub="aujourd'hui" color="var(--honey-2)"/>
+      <KPI icon={Droplet} label="Couches" val={`${couches.length}`} sub={`${couches.filter(c=>c.sub==="Selle").length} selles`} color="var(--comfort)"/>
+      <KPI icon={Clock} label="Prochaine sieste" val={sleep.active?"Dort":nextNap||"—"} sub={sleep.active?"en cours":"estimée"} color="var(--sage-2)"/>
+    </div>
+    <div className="lbl"><Plus size={14}/> Noter en un geste</div>
+    <div className="logrow">
+      <div className="logbtn" onClick={()=>logFeed("Sein")}><div className="c" style={{background:"var(--honey-soft)"}}><Milk size={18} color="var(--honey-2)"/></div>Sein</div>
+      <div className="logbtn" onClick={()=>logFeed("Biberon")}><div className="c" style={{background:"var(--honey-soft)"}}><Milk size={18} color="var(--honey-2)"/></div>Biberon</div>
+      <div className="logbtn" onClick={toggleSleep}><div className="c" style={{background:"var(--sage-soft)"}}><Moon size={18} color="var(--sage)"/></div>{sleep.active?"Réveil":"Sommeil"}</div>
+      <div className="logbtn" onClick={()=>setCc(true)}><div className="c" style={{background:"var(--comfort-soft)"}}><Droplet size={18} color="var(--comfort)"/></div>Couche</div>
+    </div>
+    {cc&&<div className="card" style={{marginTop:10}}><div className="seg">{["Pipi","Selle","Mixte"].map(s=>(<div key={s} className="opt" onClick={()=>logCouche(s)}>{s}</div>))}<div className="opt" onClick={()=>setCc(false)}>Annuler</div></div></div>}
+    {events.length>0&&(<><div className="lbl"><Clock size={14}/> Journal</div>
+      <div className="card">{[...events].sort((a,b)=>b.time-a.time).map((e,i)=>{const Ic=evIcon(e.type);return(<div key={i} className="tl"><div className="c" style={{background:"var(--surface-2)"}}><Ic size={16} color={evCol(e.type)}/></div><div style={{flex:1}}><b>{e.type==="repas"?`Repas · ${e.sub}`:e.type==="couche"?`Couche · ${e.sub}`:`Sommeil · ${e.dur} min`}</b></div><span>{hhmm(e.time)}</span></div>);})}</div></>)}
+    <div className="lbl"><Moon size={14}/> Sommeil des 7 derniers jours</div>
+    <div className="card"><div style={{height:120}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={sleepWeek} margin={{top:6,right:6,left:-24,bottom:0}}>
+          <defs><linearGradient id="gsl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#557A66" stopOpacity=".35"/><stop offset="100%" stopColor="#557A66" stopOpacity=".03"/></linearGradient></defs>
+          <XAxis dataKey="d" tick={{fontSize:11,fill:"#6E7A70"}} axisLine={false} tickLine={false}/>
+          <YAxis domain={[0,18]} tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={24}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--line)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[`${v} h`,"Sommeil"]} labelStyle={{display:"none"}}/>
+          <Area type="monotone" dataKey="h" stroke="#3C5B49" strokeWidth={2.5} fill="url(#gsl)"/>
+        </AreaChart>
+      </ResponsiveContainer>
+    </div></div>
+    <div className="lbl"><Scale size={14}/> Courbe de poids (OMS)</div>
+    <div className="card"><div style={{height:150}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={curveData} margin={{top:8,right:8,left:-22,bottom:0}}>
+          <Area type="monotone" dataKey="p3" stackId="b" stroke="none" fill="#fff" fillOpacity={0}/>
+          <Area type="monotone" dataKey="band" stackId="b" stroke="none" fill="#7C9A86" fillOpacity=".13"/>
+          <ReferenceLine x={age.months} stroke="#3C5B49" strokeWidth={1.2} strokeDasharray="3 3"/>
+          <XAxis dataKey="m" tick={{fontSize:10,fill:"#6E7A70"}} axisLine={false} tickLine={false} interval={3} tickFormatter={v=>v+"m"}/>
+          <YAxis tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={28} domain={["dataMin-1","dataMax+1"]}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--line)",fontSize:12,fontFamily:"Mulish"}} formatter={(v,n)=>n==="p50"?[`${v} kg`,"Médiane"]:null} labelFormatter={l=>`${l} mois`}/>
+          <Line type="monotone" dataKey="p50" stroke="#DC9B4E" strokeWidth={1.5} strokeDasharray="5 4" dot={false}/>
+          <Line type="monotone" dataKey="enfant" stroke="#3C5B49" strokeWidth={2.8} dot={{r:4,fill:"#3C5B49"}} connectNulls/>
+        </AreaChart>
+      </ResponsiveContainer>
+    </div></div>
+    <div className="safe" style={{marginTop:14}}><AlertCircle size={16} style={{flex:"none",marginTop:1}}/><span>Fièvre avant 3 mois, teint gris, somnolence inhabituelle, refus de boire, gêne respiratoire : le 15.</span></div>
+  </>);
+}
+
+/* ── APP ─────────────────────────────────────────────── */
+const FICHES_COURT={
+  preconception:[
+    {id:"bbt",icon:Activity,title:"La température basale",tag:"Méthode",secs:[["Principe","La température s'élève de 0,3 à 0,5 °C après l'ovulation — ce plateau la confirme a posteriori."],["Comment","Au réveil, avant de se lever, à heure régulière, avec le même thermomètre."]]},
+    {id:"glaire",icon:Droplet,title:"La glaire cervicale",tag:"Fertilité",secs:[["Le signe clé","Abondante, claire et filante (blanc d'œuf) = fertilité élevée, ovulation proche."]]},
+    {id:"folates",icon:Leaf,title:"Folates & hygiène de vie",tag:"Préparer",secs:[["Folates","Supplémentation 1 à 2 mois avant la conception réduit le risque d'anomalies du tube neural."],["Le couple","La fertilité se joue à deux."]]},
+  ],
+  grossesse:[
+    {id:"alim",icon:Leaf,title:"Bien manger enceinte",tag:"Alimentation",secs:[["À éviter","Lait cru, charcuterie et poisson crus, viande peu cuite."],["Réflexes","Bien cuire, laver fruits et légumes."]]},
+    {id:"alerte",icon:AlertCircle,title:"Les signes d'alerte",tag:"Sécurité",secs:[["Sans attendre","Saignements, douleurs intenses, fièvre, baisse des mouvements."],["Qui","Sage-femme, maternité, ou le 15."]]},
+  ],
+  postpartum:[
+    {id:"bb",icon:Heart,title:"Baby blues ou plus ?",tag:"Bien-être",secs:[["Baby blues","Émotivité dans les premiers jours, s'estompe en 1–2 semaines."],["Au-delà","Dépression post-partum : se soigne très bien si accompagnée."]]},
+    {id:"rp",icon:Activity,title:"Rééducation périnéale",tag:"Corps",secs:[["Quand","Après la visite post-natale, sur prescription."],["Pourquoi","Pour prévenir fuites, douleurs et prolapsus."]]},
+  ],
+  bebe:[
+    {id:"som",icon:Moon,title:"Le sommeil 0–2 ans",tag:"Rythmes",secs:[["Avant 3-4 mois","Sommeil irrégulier et réveils fréquents : normaux."],["Signes","Bâillements, regard dans le vide → proposer la sieste."]]},
+    {id:"div",icon:Milk,title:"La diversification",tag:"Alimentation",secs:[["Quand","Entre 4 et 6 mois révolus."],["Comment","Un aliment à la fois ; le lait reste central."]]},
+  ],
+};
+
+export default function App(){
+  const [profile,setProfile]=useState({
+    phase:null, name:"", lastPeriod:isoOffset(-11), cycleLen:28, periodLen:5,
+    dpa:isoOffset(112), deliveryDate:isoOffset(-20), babyBirth:isoMonthsAgo(5), babySex:"g"
+  });
+  const [tab,setTab]=useState("home");
+  const [sheet,setSheet]=useState(null);
+  const [phaseSheet,setPhaseSheet]=useState({open:false,phaseId:null,day:null,calc:null});
+  const [toast,setToast]=useState(null);
+  const [loaded,setLoaded]=useState(false);
+
+  useEffect(()=>{(async()=>{try{if(window.storage){const p=await window.storage.get("nidc_profile");if(p)setProfile(JSON.parse(p.value));}}catch(e){}setLoaded(true);})()},[]);
+  useEffect(()=>{if(loaded)persist("nidc_profile",profile);},[profile,loaded]);
+
+  const flash=useCallback((m)=>{setToast(m);setTimeout(()=>setToast(null),1800);},[]);
+  const openPhase=(ph,day)=>{
+    const c=calcPreco({lastPeriod:profile.lastPeriod,cycleLen:profile.cycleLen||28,periodLen:profile.periodLen||5});
+    setPhaseSheet({open:true,phaseId:ph,day,calc:c});
+  };
+
+  if(!loaded) return (<><style>{CSS}</style><div className="stage nr"><div className="device"/></div></>);
+
+  const P=profile.phase?PHASES[profile.phase]:null;
+  const hello=new Date().getHours()<12?"Bonjour":new Date().getHours()<18?"Bel après-midi":"Bonsoir";
+
+  if(!profile.phase) return (<><style>{CSS}</style><div className="stage nr"><div className="device">
+    <div className="screen fade" style={{paddingTop:0}}>
+      <div style={{textAlign:"center",margin:"34px 0 6px"}}>
+        <div style={{width:54,height:54,borderRadius:18,background:"var(--sage)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:14}}><Leaf size={26} color="#fff"/></div>
+        <h1 className="h1 sf" style={{fontSize:28}}>Bienvenue dans Nid</h1>
+        <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.55,margin:"8px 18px 0"}}>Un accompagnement bienveillant et confidentiel, du projet d'enfant aux premières années.</p>
+      </div>
+      <div className="lbl">Comment vous appeler ?</div>
+      <input className="input" placeholder="Votre prénom (facultatif)" value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})}/>
+      <div className="lbl">Où en êtes-vous ?</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {ORDER.map(k=>{const Pp=PHASES[k];return(
+          <button key={k} className="card" style={{cursor:"pointer",textAlign:"left",padding:16,border:"1px solid var(--line)"}} onClick={()=>{setProfile({...profile,phase:k});setTab("home");}}>
+            <Pp.Icon size={22} color={Pp.color}/><div style={{fontWeight:800,fontSize:14.5,marginTop:8}}>{Pp.label}</div>
+          </button>);})}
+      </div>
+    </div>
+  </div></div></>);
+
+  return (<><style>{CSS}</style><div className="stage nr"><div className="device">
+
+    {tab==="home" && (
+      <div className="screen fade" key={"h"+profile.phase}>
+        <div className="top">
+          <div><div className="eb">{hello}{profile.name?`, ${profile.name}`:""}</div><h1 className="h1 sf">Votre nid</h1></div>
+          <button className="chip" onClick={()=>setTab("parcours")}><P.Icon size={15}/> {P.short}</button>
+        </div>
+        {profile.phase==="preconception" && <DashPreco profile={profile} setProfile={setProfile} onPhaseTap={openPhase} flash={flash}/>}
+        {profile.phase==="grossesse"     && <DashGross profile={profile} flash={flash}/>}
+        {profile.phase==="postpartum"    && <DashPP    profile={profile} flash={flash}/>}
+        {profile.phase==="bebe"          && <DashBebe  profile={profile} flash={flash}/>}
+      </div>
+    )}
+
+    {tab==="parcours" && (
+      <div className="screen fade" key="parcours">
+        <div className="top"><div><div className="eb">Le Fil</div><h1 className="h1 sf">Votre parcours</h1></div></div>
+        <div className="card" style={{marginTop:6}}><Fil phase={profile.phase} big onPick={p=>{setProfile({...profile,phase:p});setTab("home");}}/>
+          <div style={{fontSize:12.5,color:"var(--muted)",textAlign:"center",marginTop:4}}>Un seul compagnon, de la préconception aux 2 ans de l'enfant.</div>
+        </div>
+        <div className="lbl"><Map size={14}/> Les quatre temps</div>
+        {ORDER.map(k=>{const Pp=PHASES[k],cur=profile.phase===k;return(
+          <div key={k} className={`phasecard ${cur?"cur":""}`} onClick={()=>{setProfile({...profile,phase:k});setTab("home");}}>
+            <div className="ic" style={{background:Pp.color+"22"}}><Pp.Icon size={22} color={Pp.color}/></div>
+            <div style={{flex:1}}><b style={{fontSize:15,display:"block"}}>{Pp.label}</b><span style={{fontSize:12.5,color:"var(--muted)"}}>{cur?"phase actuelle":"changer pour cette phase"}</span></div>
+            {cur?<span className="badge" style={{background:"var(--sage-soft)",color:"var(--sage)"}}>en cours</span>:<ChevronRight size={18} color="var(--muted)"/>}
+          </div>);})}
+      </div>
+    )}
+
+    {tab==="learn" && (
+      <div className="screen fade" key="learn">
+        <div className="top"><div><div className="eb">Bibliothèque · {P?.short}</div><h1 className="h1 sf">Comprendre</h1></div></div>
+        {(FICHES_COURT[profile.phase]||[]).map(f=>(
+          <div key={f.id} className="card" style={{marginBottom:11,cursor:"pointer"}} onClick={()=>setSheet(f)}>
+            <div style={{display:"flex",alignItems:"center",gap:13}}>
+              <div style={{width:42,height:42,borderRadius:13,background:"var(--sage-soft)",display:"flex",alignItems:"center",justifyContent:"center",flex:"none"}}><f.icon size={19} color="var(--sage)"/></div>
+              <div style={{flex:1}}><div className="sf" style={{fontSize:16,fontWeight:600,lineHeight:1.2}}>{f.title}</div><span className="badge" style={{background:"var(--honey-soft)",color:"var(--honey-2)",marginTop:4}}>{f.tag}</span></div>
+              <ChevronRight size={18} color="var(--muted)"/>
+            </div>
+          </div>
+        ))}
+        <div className="note" style={{marginTop:6}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Information générale, à valider avec un professionnel de santé.</span></div>
+      </div>
+    )}
+
+    {tab==="profil" && (
+      <div className="screen fade" key="profil">
+        <div className="top"><div><div className="eb">Votre espace</div><h1 className="h1 sf">Profil</h1></div></div>
+        <div className="card" style={{marginTop:6}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>Prénom</div>
+          <input className="input" placeholder="Votre prénom" value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})}/>
+        </div>
+        <div className="lbl">Réglages de la phase</div>
+        <div className="card">
+          {profile.phase==="grossesse"&&(<><div style={{fontSize:13,fontWeight:700,margin:"0 0 6px"}}>Date prévue d'accouchement</div><input className="input" type="date" value={profile.dpa} onChange={e=>setProfile({...profile,dpa:e.target.value})}/></>)}
+          {profile.phase==="postpartum"&&(<><div style={{fontSize:13,fontWeight:700,margin:"0 0 6px"}}>Date de l'accouchement</div><input className="input" type="date" value={profile.deliveryDate} onChange={e=>setProfile({...profile,deliveryDate:e.target.value})}/></>)}
+          {profile.phase==="bebe"&&(<>
+            <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>Date de naissance de bébé</div>
+            <input className="input" type="date" value={profile.babyBirth} onChange={e=>setProfile({...profile,babyBirth:e.target.value})} style={{marginBottom:14}}/>
+            <div style={{fontSize:13,fontWeight:700,margin:"0 0 8px"}}>Sexe (courbes)</div>
+            <div className="seg"><div className={`opt ${profile.babySex==="g"?"on":""}`} onClick={()=>setProfile({...profile,babySex:"g"})}>Garçon</div><div className={`opt ${profile.babySex==="f"?"on":""}`} onClick={()=>setProfile({...profile,babySex:"f"})}>Fille</div></div>
+          </>)}
+          {profile.phase==="preconception"&&<div style={{fontSize:13.5,color:"var(--muted)"}}>Les réglages du cycle se trouvent dans l'onglet Accueil.</div>}
+        </div>
+        <div className="lbl">Confidentialité</div>
+        <div className="card" style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+          <Heart size={18} color="var(--sage)" style={{flex:"none",marginTop:1}}/>
+          <div style={{fontSize:13,color:"#34403a",lineHeight:1.5}}>Vos données restent privées et ne sont jamais revendues. Export et suppression disponibles sur demande.</div>
+        </div>
+      </div>
+    )}
+
+    <div className={`toast ${toast?"show":""}`}><Check size={15}/> {toast}</div>
+
+    {/* Fiche générique */}
+    {sheet && (
+      <div className="overlay" onClick={()=>setSheet(null)}>
+        <div className="sheet" onClick={e=>e.stopPropagation()}>
+          <div className="grab"/>
+          <div style={{width:40,height:40,borderRadius:12,background:"var(--sage-soft)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}><sheet.icon size={19} color="var(--sage)"/></div>
+          <h2>{sheet.title}</h2>
+          {sheet.secs.map((s,i)=>(<div key={i} className="fiche-sec"><h4>{s[0]}</h4><p>{s[1]}</p></div>))}
+          <div className="note" style={{marginTop:6}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Information générale, à valider avec un professionnel.</span></div>
+          <button className="btn btn-s" style={{marginTop:14,width:"100%"}} onClick={()=>setSheet(null)}>Fermer</button>
+        </div>
+      </div>
+    )}
+
+    {/* Fiche phase du cycle */}
+    {phaseSheet.open && <PhaseSheet phaseId={phaseSheet.phaseId} day={phaseSheet.day} cycleCalc={phaseSheet.calc} onClose={()=>setPhaseSheet({open:false,phaseId:null,day:null,calc:null})}/>}
+
+    <div className="tabbar">
+      {[["home","Accueil",Home],["parcours","Parcours",Map],["learn","Comprendre",BookOpen],["profil","Profil",Settings]].map(([k,l,Ic])=>(
+        <button key={k} className={`tab ${tab===k?"active":""}`} onClick={()=>setTab(k)}><span className="dot"/><Ic size={21}/><span>{l}</span></button>
+      ))}
+    </div>
+
+  </div></div></>);
+}
