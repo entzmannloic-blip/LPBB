@@ -1,846 +1,527 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import {
-  Sparkles, Activity, Info, CalendarDays, TrendingUp, Check, ChevronRight, ChevronLeft,
-  Heart, Settings, HelpCircle, Leaf, Plus, Volume2, BookOpen, Home, BarChart3, Baby,
-  Moon, Milk, Droplet, Scale, Stethoscope, AlertCircle, Clock, Map, Flower2, Footprints
-} from "lucide-react";
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine } from "recharts";
-
-/* ============================================================================
-   NID — APP COMPLÈTE V2  (Fil + Roue interactive + 4 phases)
-   ============================================================================ */
-
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Mulish:wght@600;700;800&display=swap');
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#EBEEE5">
+<title>Nid · Mon cycle</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Mulish:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
 :root{
-  --bg:#EBEEE5;--surface:#FFFFFF;--surface-2:#F8FAF4;--ink:#243029;--muted:#6E7A70;--line:#E1E6DB;
-  --sage:#3C5B49;--sage-2:#557A66;--sage-soft:#DCE7DE;
-  --honey:#DC9B4E;--honey-2:#C5832F;--honey-soft:#F6E7C9;
-  --comfort:#897FA6;--comfort-soft:#ECE7F2;--clay:#CC7355;--clay-soft:#F7E2D8;
+  --bg:#EBEEE5;--surface:#fff;--ink:#1C2820;--muted:#6E7A70;--line:#E1E6DB;
+  --sage:#3C5B49;--sage2:#557A66;--sage-s:#DCE7DE;--honey:#DC9B4E;--honey2:#C5832F;
+  --c-men:#D55E00;--c-men-s:#FAEDE8;--c-fol:#56B4E9;--c-fol-s:#E4F3FC;
+  --c-fer:#009E73;--c-fer-s:#CCF0E2;--c-pea:#E69F00;--c-pea-s:#FEF2CC;
+  --c-lut:#0072B2;--c-lut-s:#CCE4F5;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-.nr{font-family:'Mulish',system-ui,sans-serif;color:var(--ink)}
-.sf{font-family:'Fraunces','Georgia',serif}
-.stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-  background:radial-gradient(1200px 600px at 15% -10%,#F3EFE2 0,transparent 55%),
-  radial-gradient(900px 700px at 110% 110%,#DDE7DD 0,transparent 50%),#E4E8DC}
-.device{position:relative;width:100%;max-width:434px;height:min(95vh,960px);background:var(--bg);
-  border-radius:38px;overflow:hidden;display:flex;flex-direction:column;
-  box-shadow:0 40px 80px -30px rgba(36,48,41,.45),0 0 0 1px rgba(36,48,41,.06)}
-.screen{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 16px 116px;scrollbar-width:none}
-.screen::-webkit-scrollbar{display:none}
-.fade{animation:f .4s cubic-bezier(.2,.7,.2,1)}@keyframes f{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.top{padding:22px 4px 6px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.eb{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sage-2);font-weight:800}
-.h1{font-size:25px;line-height:1.12;font-weight:600;margin:4px 0 0;letter-spacing:-.01em}
-.chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
-  border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:700;color:var(--sage);cursor:pointer;flex:none}
-.iconbtn{width:38px;height:38px;border-radius:12px;background:var(--surface);border:1px solid var(--line);
-  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sage);flex:none}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px;
-  box-shadow:0 8px 22px -18px rgba(36,48,41,.4)}
-.lbl{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;
-  margin:20px 4px 10px;display:flex;align-items:center;gap:7px}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:13px 14px}
-.kpi .k-top{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;font-weight:700}
-.kpi .k-val{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1.05;margin-top:7px}
-.kpi .k-sub{font-size:11px;color:var(--muted);margin-top:3px}
-.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;border-radius:99px;padding:4px 9px}
-.seg{display:flex;gap:6px;flex-wrap:wrap}
-.opt{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 12px;font-size:13px;cursor:pointer;font-weight:700;color:var(--ink)}
-.opt.on{background:var(--sage);color:#fff;border-color:var(--sage)}
-.btn{appearance:none;border:none;cursor:pointer;font-family:inherit;font-weight:700;border-radius:14px;
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s}
-.btn:active{transform:scale(.97)}
-.btn-p{background:var(--sage);color:#fff;padding:14px;font-size:15px;width:100%}
-.btn-s{background:var(--sage-soft);color:var(--sage);padding:11px 14px;font-size:14px}
-.input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:12px 13px;
-  font-family:inherit;font-size:15px;outline:none;color:var(--ink)}
-.input:focus{border-color:var(--sage)}
-.stepper{display:flex;align-items:center;background:var(--bg);border-radius:14px}
-.s-btn{width:38px;height:38px;border:none;background:none;cursor:pointer;font-size:22px;font-weight:800;
-  color:var(--sage);font-family:inherit;display:flex;align-items:center;justify-content:center;border-radius:12px}
-.s-btn:active{background:var(--line)}
-.s-num{min-width:44px;text-align:center;font-size:17px;font-weight:800}
-.s-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.s-row:last-child{margin-bottom:0}
-.s-lbl{font-size:14px;font-weight:700}.s-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
-.lecture{background:linear-gradient(180deg,#fff,#FBFCF7);border:1px solid var(--line);border-radius:22px;padding:18px;position:relative;overflow:hidden}
-.lecture:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--phase,#3C5B49)}
-.lecture .head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
-.lecture .head .t{font-family:'Fraunces',serif;font-size:17px;font-weight:600}
-.lecture p{font-size:14.5px;line-height:1.62;color:#34403a;margin:0 0 10px}
-.lecture .listen{display:inline-flex;align-items:center;gap:7px;background:var(--sage-soft);color:var(--sage);
-  border:none;border-radius:12px;padding:9px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
-.lecture .listen.on{background:var(--sage);color:#fff}
-.phasecard{display:flex;align-items:center;gap:14px;padding:15px;background:var(--surface);border:1px solid var(--line);
-  border-radius:18px;cursor:pointer;margin-bottom:10px}
-.phasecard .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:none}
-.phasecard.cur{border-color:var(--sage);box-shadow:0 0 0 1px var(--sage)}
-.logrow{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.logbtn{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px 6px;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink)}
-.logbtn:active{transform:scale(.96)}
-.logbtn .c{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center}
-.tl{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
-.tl:last-child{border-bottom:none}
-.tl .c{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
-.tl b{font-size:13.5px}.tl span{font-size:11.5px;color:var(--muted)}
-.wheel-hint{text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;margin:6px 0 0}
-.leg-row{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0}
-.leg-pill{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);
-  border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Mulish',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100svh;overflow-x:hidden}
+.app{max-width:430px;margin:0 auto;padding-bottom:40px}
+header{display:flex;align-items:flex-start;justify-content:space-between;padding:24px 18px 8px}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--sage2);font-weight:800}
+h1{font-family:'Fraunces',serif;font-size:27px;font-weight:700;letter-spacing:-.02em;margin-top:3px;line-height:1}
+.today-badge{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:13px;font-weight:800;color:var(--sage);flex:none}
+.view-tabs{display:flex;margin:0 16px 14px;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:4px;gap:3px}
+.view-tab{flex:1;border:none;background:none;border-radius:12px;padding:10px 2px;cursor:pointer;font-weight:800;font-size:12.5px;color:var(--muted);font-family:inherit;transition:all .18s}
+.view-tab.active{background:var(--sage);color:#fff}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:0 6px 20px -10px rgba(28,40,32,.16)}
+.lbl-section{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:18px 18px 10px;display:flex;align-items:center;gap:6px}
+.wheel-wrap{padding:8px 12px 0;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+.wheel-svg{width:100%;display:block;overflow:visible}
+.hint{text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;margin:6px 18px 0}
+.legend{display:flex;flex-wrap:wrap;gap:7px;padding:12px 16px 0}
+.leg-pill{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:11.5px;font-weight:700}
 .leg-dot{width:9px;height:9px;border-radius:3px;flex:none}
-.fert-track{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
-.fert-fill{height:100%;border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1),background .3s}
-.overlay{position:absolute;inset:0;background:rgba(36,48,41,.42);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:flex-end;animation:f .25s}
-.sheet{background:var(--bg);width:100%;border-radius:26px 26px 0 0;padding:8px 18px 28px;max-height:88%;overflow-y:auto;animation:up .34s cubic-bezier(.2,.7,.2,1)}
-@keyframes up{from{transform:translateY(100%)}to{transform:none}}
-.grab{width:40px;height:4px;border-radius:99px;background:var(--line);margin:10px auto 16px}
-.sheet h2{font-family:'Fraunces',serif;font-size:21px;font-weight:700;margin:8px 0 10px}
-.fiche-sec{margin-bottom:11px}
-.fiche-sec h4{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--sage-2);font-weight:800;margin:0 0 4px}
-.fiche-sec p{font-size:14px;line-height:1.58;color:#34403a;margin:0}
-.safe{display:flex;gap:9px;align-items:flex-start;background:var(--clay-soft);border:1px solid #E9C9BC;border-radius:14px;padding:11px 13px;font-size:12.5px;color:#7a3b27;line-height:1.45}
-.note{display:flex;gap:9px;align-items:flex-start;background:var(--honey-soft);border:1px solid #ECD6A8;border-radius:14px;padding:11px 13px;font-size:12.5px;color:#6b4e1d;line-height:1.45}
-.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);
-  color:#fff;padding:11px 16px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;
-  transition:.3s;z-index:60;display:flex;gap:8px;align-items:center;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
-.toast.show{opacity:1;transform:translateX(-50%)}
-.tabbar{position:absolute;left:0;right:0;bottom:0;height:76px;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);
-  border-top:1px solid var(--line);display:flex;padding:8px 6px 14px;z-index:30}
-.tab{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:4px;color:var(--muted);font-size:10.5px;font-weight:700;font-family:inherit}
-.tab.active{color:var(--sage)}
-.tab .dot{width:5px;height:5px;border-radius:99px;background:transparent}
-.tab.active .dot{background:var(--honey)}
-@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-`;
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 0}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:13px 14px;box-shadow:0 4px 16px -8px rgba(28,40,32,.15)}
+.kpi-lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.kpi-val{font-family:'Fraunces',serif;font-size:23px;font-weight:700;line-height:1.1;margin-top:6px}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600}
+.fert-card,.settings,.confidence,.disclaimer{margin:12px 16px 0}
+.fert-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 15px;box-shadow:0 4px 16px -8px rgba(28,40,32,.15)}
+.fert-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.fert-head .fl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.fert-head .fv{font-size:14px;font-weight:800}
+.fert-track{height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.fert-fill{height:100%;border-radius:99px;width:0;transition:width .5s cubic-bezier(.2,.8,.2,1),background .3s}
+.settings{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:0 4px 16px -8px rgba(28,40,32,.15)}
+.s-title{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:14px}
+.s-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.s-row:last-child{margin-bottom:0}
+.s-lbl{font-size:14px;font-weight:700}.s-sub{font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:600}
+.stepper{display:flex;align-items:center;background:var(--bg);border-radius:12px}
+.s-btn{width:36px;height:36px;border:none;background:none;cursor:pointer;font-size:20px;font-weight:800;color:var(--sage);font-family:inherit;border-radius:10px}
+.s-btn:active{background:var(--line)}
+.s-num{min-width:42px;text-align:center;font-size:16px;font-weight:800}
+.d-input{border:1px solid var(--line);background:var(--bg);border-radius:11px;padding:8px 10px;font-size:14px;font-weight:700;font-family:inherit;color:var(--ink);outline:none;max-width:150px}
+.confidence,.disclaimer{border-radius:15px;padding:11px 13px;font-size:12.5px;line-height:1.5;display:flex;gap:8px;align-items:flex-start;font-weight:600}
+.disclaimer{background:#FFFBEC;border:1px solid #ECD6A8;color:#6b4e1d}
+.cal-wrap,.obs-wrap{padding:0 16px}
+.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.month-btn{width:42px;height:42px;border:1px solid var(--line);background:var(--surface);border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--sage)}
+.month-btn:active{background:var(--sage-s)}
+.month-lbl{font-family:'Fraunces',serif;font-size:20px;font-weight:700}
+.cal-banner{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 13px;margin-bottom:10px;font-size:12.5px;font-weight:700;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cal-banner strong{color:var(--ink)}.cb-sep{color:var(--line)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-head{text-align:center;font-size:11px;font-weight:800;color:var(--muted);padding:3px 0 8px}
+.cal-day{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:transform .1s}
+.cal-day:active{transform:scale(.9)}
+.cal-day.empty{background:none;pointer-events:none}
+.cal-day.menses{background:var(--c-men-s)}.cal-day.follicular{background:var(--c-fol-s)}
+.cal-day.fertile{background:var(--c-fer-s)}.cal-day.peak{background:var(--c-pea-s)}.cal-day.luteal{background:var(--c-lut-s)}
+.cal-day.today{box-shadow:0 0 0 2.5px var(--ink);z-index:1}
+.cal-day.future{opacity:.55}
+.cal-num{font-size:13px;font-weight:800;line-height:1}
+.cal-icon{font-size:9px;line-height:1;margin-top:1px}
+.cal-dot{position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--sage)}
+.cal-eclair{position:absolute;top:2px;left:3px;font-size:9px}
+.cal-peak{position:absolute;bottom:2px;right:3px;font-size:8px;font-weight:800;color:var(--c-pea)}
+.cal-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 0}
+.cs-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 13px}
+.cs-lbl{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.cs-val{font-family:'Fraunces',serif;font-size:19px;font-weight:700;margin-top:5px;line-height:1}
+.cs-sub{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600}
+.logs-title{margin:16px 0 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.log-empty{text-align:center;padding:18px;font-size:13px;color:var(--muted);font-weight:600;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.log-item{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;cursor:pointer}
+.li-date{font-size:12px;font-weight:800;color:var(--sage2);min-width:58px;flex:none}
+.li-ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+.li-body{flex:1;min-width:0}
+.li-tags{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-note{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Tableau d'observation */
+.obs-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.obs-table{border-collapse:collapse;font-size:12px;min-width:100%}
+.obs-table th,.obs-table td{border:1px solid var(--line);padding:0;text-align:center;height:34px;min-width:34px;position:relative}
+.obs-table .rowlbl{position:sticky;left:0;background:var(--surface);z-index:2;text-align:left;padding:0 8px;font-weight:800;font-size:10.5px;color:var(--sage2);min-width:96px;letter-spacing:.02em;text-transform:uppercase}
+.obs-table thead th{background:var(--sage-s);font-weight:800;color:var(--sage);font-size:11px}
+.obs-table thead th.today-col{background:var(--sage);color:#fff}
+.obs-cell-day{font-weight:800}
+.obs-pellet{width:20px;height:20px;border-radius:50%;margin:auto;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff}
+.obs-sens{font-weight:800;font-size:13px}
+.obs-temp{font-size:10px;font-weight:700;color:var(--c-lut)}
+.obs-peak-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:var(--c-pea);color:#2a1e00;font-weight:800;font-size:10px}
+.obs-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.obs-leg{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700}
+.obs-temp-chart{margin-top:14px}
+.peak-callout{background:#FEF2CC;border:1px solid #E9C97A;border-radius:14px;padding:12px 14px;margin-top:12px;font-size:13px;color:#7a5a12;line-height:1.5;font-weight:600;display:flex;gap:8px}
+.overlay{position:fixed;inset:0;background:rgba(28,40,32,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:40;opacity:0;pointer-events:none;transition:opacity .28s}
+.overlay.open{opacity:1;pointer-events:all}
+.bsheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:430px;margin:0 auto;background:var(--bg);border-radius:26px 26px 0 0;padding:0 20px 44px;max-height:88svh;overflow-y:auto;transform:translateY(100%);transition:transform .36s cubic-bezier(.2,.8,.2,1)}
+.bsheet.open{transform:translateY(0)}
+.grab{width:40px;height:4px;background:var(--line);border-radius:99px;margin:12px auto 18px}
+.bs-ic{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:14px}
+.bs-title{font-family:'Fraunces',serif;font-size:23px;font-weight:700;margin-bottom:4px}
+.bs-range{font-size:13px;color:var(--muted);font-weight:700;margin-bottom:16px}
+.bs-body{font-size:15px;line-height:1.65;color:#2e3d34}
+.bs-body p{margin-bottom:11px}
+.bs-refine{background:#E5F5EE;border:1px solid #A8DABC;border-radius:13px;padding:11px 13px;font-size:13px;color:#145c36;line-height:1.5;margin-top:13px}
+.bs-warn{background:#FFFBEC;border:1px solid #ECD6A8;border-radius:13px;padding:11px 13px;font-size:13px;color:#6b4e1d;line-height:1.5;margin-top:9px;display:flex;gap:8px}
+.bs-close{width:100%;margin-top:16px;padding:14px;border:none;border-radius:14px;background:var(--sage);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.ds-date{font-size:13px;color:var(--muted);font-weight:800;margin-bottom:4px;text-transform:capitalize}
+.ds-phase{font-size:18px;font-weight:700;margin-bottom:18px}
+.ds-section{margin-bottom:16px}
+.ds-lbl{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:9px}
+.seg{display:flex;gap:7px;flex-wrap:wrap}
+.seg-btn{border:1.5px solid var(--line);background:var(--surface);border-radius:11px;padding:9px 12px;font-size:13px;cursor:pointer;font-weight:700;color:var(--ink);font-family:inherit;transition:all .12s}
+.seg-btn:active{transform:scale(.95)}
+.seg-btn.on{background:var(--sage);color:#fff;border-color:var(--sage)}
+.seg-btn.on-p{background:#E69F00;color:#2a1e00;border-color:#E69F00}
+.period-btn{width:100%;padding:13px;border:2px solid #D55E00;background:#FAEDE8;border-radius:14px;color:#7a2e10;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
+.period-btn.on{background:#D55E00;color:#fff;border-color:#D55E00}
+.ds-input{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:13px;padding:11px 13px;font-size:15px;font-weight:700;font-family:inherit;color:var(--ink);outline:none}
+.ds-textarea{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:13px;padding:12px 13px;font-family:inherit;font-size:15px;outline:none;color:var(--ink);resize:none;min-height:62px;line-height:1.5}
+.ds-save{width:100%;padding:14px;border:none;border-radius:14px;background:var(--sage);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:6px}
+.ds-cancel{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:none;color:var(--muted);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.sens-hint{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:7px;line-height:1.4}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:14px;font-size:13.5px;font-weight:700;opacity:0;pointer-events:none;transition:all .3s;z-index:60;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div><div class="eyebrow">Nid · Préconception</div><h1>Mon cycle</h1></div>
+    <div class="today-badge" id="badge">J —</div>
+  </header>
 
-/* ── Phases Nid (navigation) ─────────────────────────── */
-const PHASES = {
-  preconception:{ key:"preconception", label:"Préconception", short:"Projet bébé", Icon:Sparkles, color:"#7C9A86" },
-  grossesse:    { key:"grossesse",     label:"Grossesse",     short:"Grossesse",   Icon:Flower2,  color:"#DC9B4E" },
-  postpartum:   { key:"postpartum",    label:"Post-partum",   short:"Post-partum", Icon:Heart,    color:"#CC7355" },
-  bebe:         { key:"bebe",          label:"Bébé 0–2 ans",  short:"Bébé",        Icon:Baby,     color:"#557A66" },
-};
-const ORDER = ["preconception","grossesse","postpartum","bebe"];
-
-/* ── Phases du cycle (roue — palette Okabe-Ito daltonisme-safe) ─── */
-const CPH = {
-  menses:    { label:"Règles",           emoji:"🩸", color:"#D55E00", soft:"#FAEDE8" },
-  follicular:{ label:"Folliculaire",     emoji:"💧", color:"#56B4E9", soft:"#E4F3FC" },
-  fertile:   { label:"Fenêtre fertile",  emoji:"🌿", color:"#009E73", soft:"#CCF0E2" },
-  peak:      { label:"Pic d'ovulation",  emoji:"⭐", color:"#E69F00", soft:"#FEF2CC" },
-  luteal:    { label:"Phase lutéale",    emoji:"🌙", color:"#0072B2", soft:"#CCE4F5" },
-};
-
-/* ── Fiches pédagogiques par phase de cycle ─────────────────────── */
-const CINFO = {
-  menses:{ title:"Phase menstruelle", paras:[
-    "Le Jour 1 du cycle marque le début des règles. La muqueuse utérine, non fécondée, est éliminée sous l'effet de la chute des hormones. Durée habituelle : 3 à 7 jours.",
-    "Fatigue, crampes légères et variations d'humeur sont fréquentes et normales. Chaleur sur le bas-ventre, fer et hydratation peuvent aider.",
-    "C'est le bon moment pour penser à une supplémentation en folates (vitamine B9) si un projet de grossesse est envisagé — idéalement 1 à 2 mois avant la conception.",
-  ], refine:"💧 La conception pendant les règles est très peu probable — mais non nulle sur un cycle court, où l'ovulation peut survenir dès la fin des règles." },
-  follicular:{ title:"Phase folliculaire", paras:[
-    "Après les règles, la FSH stimule plusieurs follicules ovariens. L'un d'eux devient dominant et produit des œstrogènes qui épaississent la muqueuse utérine.",
-    "Cette phase est élastique : c'est elle qui explique pourquoi la durée totale du cycle varie d'une personne à l'autre. La phase lutéale, elle, reste constante (~14 j).",
-    "C'est souvent la période de plus grande énergie. La glaire cervicale devient progressivement plus abondante et élastique — signe que l'ovulation approche.",
-  ], refine:"💧 Observer la glaire cervicale : elle devient progressivement plus claire, filante et abondante. C'est l'un des signes les plus fiables de l'approche de l'ovulation." },
-  fertile:{ title:"Fenêtre fertile", paras:[
-    "Les spermatozoïdes peuvent survivre jusqu'à 5 jours dans les voies génitales. Un rapport dans cette période peut donc mener à une fécondation si l'ovulation survient dans les jours suivants.",
-    "La glaire cervicale atteint sa texture la plus fertile : abondante, transparente et filante, semblable à du blanc d'œuf.",
-    "En cas de projet de grossesse, cette fenêtre est l'une des plus favorables. En cas de projet contraceptif, c'est la période qui nécessite la plus grande vigilance.",
-  ], refine:"🔬 Un test d'ovulation urinaire (pic de LH) annonce l'ovulation 24 à 36 h à l'avance. À combiner avec la glaire pour une meilleure fiabilité." },
-  peak:{ title:"Pic d'ovulation", paras:[
-    "Un pic de LH déclenche la libération de l'ovule. Celui-ci ne survit que 12 à 24 heures — c'est le moment de fertilité maximale du cycle.",
-    "Certains signes accompagnent parfois ce moment : légère douleur d'un côté (Mittelschmerz), hausse de libido, glaire maximalement filante.",
-    "Juste après l'ovulation, la progestérone fait monter la température basale de 0,3 à 0,5 °C. Ce plateau la confirme a posteriori — il ne la prédit pas.",
-  ], refine:"🌡 La température basale (prise au réveil, avant de se lever) monte après l'ovulation et reste haute jusqu'aux prochaines règles : c'est la signature du plateau lutéal." },
-  luteal:{ title:"Phase lutéale", paras:[
-    "Le follicule vide se transforme en corps jaune, qui sécrète la progestérone. Cette hormone maintient la muqueuse utérine et fait monter la température basale.",
-    "Cette phase dure de façon remarquablement constante environ 14 jours — c'est pourquoi c'est la durée totale du cycle qui varie, pas cette phase.",
-    "Si aucune grossesse ne s'amorce, le corps jaune se résorbe, les hormones chutent et les règles débutent. Le cycle recommence.",
-  ], refine:"💊 Le SPM peut survenir en fin de phase lutéale : seins sensibles, ballonnements, irritabilité. Tout cela est hormonal et normal — il existe des solutions si ces symptômes sont intenses." },
-};
-
-/* ── Géométrie de la roue ────────────────────────────── */
-const GW = { cx:200, cy:200, rOut:168, rMid:116, rIn:88, rLabel:144, gap:1.4 };
-
-/* ── Helpers SVG ─────────────────────────────────────── */
-function wPt(r, deg){ const a=(deg-90)*Math.PI/180; return {x:GW.cx+r*Math.cos(a), y:GW.cy+r*Math.sin(a)}; }
-function wF(v){ return v.toFixed(2); }
-function wArc(r1,r2,a1,a2){
-  const g=GW.gap/2, p1=wPt(r2,a1+g), p2=wPt(r2,a2-g), p3=wPt(r1,a2-g), p4=wPt(r1,a1+g);
-  const lg=(a2-a1)>180?1:0;
-  return `M${wF(p1.x)},${wF(p1.y)} A${r2},${r2},0,${lg},1,${wF(p2.x)},${wF(p2.y)} L${wF(p3.x)},${wF(p3.y)} A${r1},${r1},0,${lg},0,${wF(p4.x)},${wF(p4.y)}Z`;
-}
-
-/* ── Calculs ─────────────────────────────────────────── */
-function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
-function daysBetween(a,b){ return Math.floor((new Date(b)-new Date(a))/864e5); }
-function fmt(d){ return new Date(d).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}); }
-function hhmm(ts){ const d=new Date(ts); return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0"); }
-const isoToday=()=>new Date().toISOString().slice(0,10);
-const isoOffset=(n)=>{ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
-const isoMonthsAgo=(n)=>{ const d=new Date(); d.setMonth(d.getMonth()-n); return d.toISOString().slice(0,10); };
-const persist=(k,v)=>{ if(typeof window!=="undefined"&&window.storage) try{window.storage.set(k,JSON.stringify(v))}catch(e){} };
-
-function calcPreco({ lastPeriod, cycleLen, periodLen }){
-  const N=cycleLen||28, P=periodLen||5;
-  const ovDay=N-14;
-  const fStart=Math.max(P+1,ovDay-5), peakS=Math.max(fStart,ovDay-1), fEnd=Math.min(N,ovDay+1);
-  const today=new Date(), lp=new Date(lastPeriod);
-  const elapsed=Math.floor((today-lp)/864e5);
-  const dayIn=((elapsed%N)+N)%N+1;
-  const cycles=Math.floor(Math.max(0,elapsed)/N);
-  const nextLP=addDays(lastPeriod,(cycles+1)*N);
-  const nextOv=addDays(nextLP,-14);
-  const dToOv=Math.round((nextOv-today)/864e5), dToPer=Math.round((nextLP-today)/864e5);
-  let todayPh;
-  if(dayIn<=P)todayPh="menses";
-  else if(dayIn<fStart)todayPh="follicular";
-  else if(dayIn>=peakS&&dayIn<=fEnd)todayPh="peak";
-  else if(dayIn>=fStart&&dayIn<peakS)todayPh="fertile";
-  else todayPh="luteal";
-  const d=dayIn-ovDay; let fPct,fLabel,fColor;
-  if(dayIn<=P){fPct=2;fLabel="Très faible";fColor=CPH.follicular.color;}
-  else if(dayIn<fStart){fPct=5;fLabel="Faible";fColor=CPH.follicular.color;}
-  else if(d<=-3){fPct=38;fLabel="Élevée";fColor=CPH.fertile.color;}
-  else if(d>=-2&&d<=0){fPct=94;fLabel="Maximale ⭐";fColor=CPH.peak.color;}
-  else if(d===1){fPct=16;fLabel="Décroissante";fColor=CPH.luteal.color;}
-  else{fPct=2;fLabel="Faible";fColor=CPH.luteal.color;}
-  return {N,P,ovDay,fStart,peakS,fEnd,dayIn,dToOv,dToPer,todayPh,fPct,fLabel,fColor,nextOv,nextLP};
-}
-function phaseFor(day,c){
-  if(day<=c.P)return "menses";
-  if(day<c.fStart)return "follicular";
-  if(day>=c.peakS&&day<=c.fEnd)return "peak";
-  if(day>=c.fStart&&day<c.peakS)return "fertile";
-  return "luteal";
-}
-function calcGross({dpa}){
-  const dt=daysBetween(new Date(),dpa); let sa=41-Math.round(dt/7); sa=Math.min(41,Math.max(4,sa));
-  const tri=sa<=14?1:sa<=27?2:3, col=tri===1?"#7C9A86":tri===2?"#DC9B4E":"#CC7355";
-  const fruits={6:"lentille",8:"framboise",10:"kumquat",12:"citron vert",14:"citron",16:"avocat",18:"poivron",20:"banane",22:"papaye",24:"épi de maïs",26:"laitue",28:"aubergine",30:"courgette",32:"chou-fleur",34:"melon",36:"salade",38:"poireau",40:"pastèque"};
-  const fk=Object.keys(fruits).map(Number); let bk=fk[0]; for(const k of fk)if(k<=sa)bk=k;
-  return {sa,tri,col,weeksLeft:Math.max(0,Math.round(dt/7)),pct:Math.min(100,Math.round(sa/41*100)),fruit:fruits[bk]};
-}
-function ageInfo(birth){
-  const days=Math.max(0,daysBetween(birth,new Date())), months=Math.min(24,Math.floor(days/30.44));
-  let label; if(days<14)label=`${days} jours`; else if(months<1)label=`${Math.floor(days/7)} semaines`;
-  else{const w=Math.floor((days-months*30.44)/7);label=`${months} mois${w>0?` ${w} sem.`:""}`;}
-  return {days,months,label};
-}
-function wakeWin(m){if(m<1)return 50;if(m<3)return 75;if(m<5)return 105;if(m<7)return 135;if(m<9)return 165;if(m<12)return 210;return 270;}
-function ppInfo(d){ const days=Math.max(0,daysBetween(d,new Date())); return {days,weeks:Math.floor(days/7),label:days<14?`J+${days}`:`${Math.floor(days/7)} semaines`}; }
-
-/* ── Lectures rédigées ───────────────────────────────── */
-function lecturePreco(c){
-  const parts=[];
-  if(c.todayPh==="menses") parts.push(`Tu es à J${c.dayIn}, en phase menstruelle — début d'un nouveau cycle. Repos et hygiène de vie (sommeil, folates) sont tes alliés. La fenêtre fertile arrive vers le J${c.fStart}.`);
-  else if(c.todayPh==="follicular") parts.push(`Tu es à J${c.dayIn}, en phase folliculaire. L'ovulation est estimée ${c.dToOv===0?"aujourd'hui":`dans ${c.dToOv} j`} — ta fenêtre fertile s'ouvre vers le J${c.fStart}.`);
-  else if(c.todayPh==="peak") parts.push(`Tu es à J${c.dayIn} : ovulation estimée, pic de fertilité. Les 48 h à venir sont les plus favorables si tu as un projet bébé.`);
-  else if(c.todayPh==="fertile") parts.push(`Tu es à J${c.dayIn}, dans ta fenêtre fertile — fertilité élevée. L'ovulation est prévue ${c.dToOv===0?"aujourd'hui":`dans ${c.dToOv} j`}.`);
-  else parts.push(`Tu es à J${c.dayIn}, en phase lutéale. Tes prochaines règles sont attendues vers le ${fmt(c.nextLP)} (dans ${c.dToPer} j).`);
-  return parts;
-}
-function lectureGross(g,dpa){
-  const f=g.fruit;
-  return [`Tu es à ${g.sa} SA${g.tri===1?", au 1er trimestre":g.tri===2?", au 2e trimestre — souvent le plus serein":", dans la dernière ligne droite"}. Bébé a la taille d'${"aeiouéâ".includes(f[0])?"une":"un"} ${f}.`,
-    `Il te reste environ ${g.weeksLeft} semaine${g.weeksLeft>1?"s":""} avant le terme prévu (${fmt(dpa)}). Écoute ton corps, et surveille les mouvements de bébé au 3e trimestre.`];
-}
-function lecturePP(pp){
-  return [`Tu es à ${pp.label} après l'accouchement. La fatigue, l'émotivité et les bouleversements sont normaux — ton corps et ton cœur s'ajustent.`,
-    `Prendre de petits moments pour toi fait partie du soin. Si le mal-être s'installe au-delà de deux semaines, tu n'es pas seule : en parler est un acte de soin.`];
-}
-function lectureBebe(age,sleepMin,feeds,nextNap,sleeping){
-  const h=Math.floor(sleepMin/60),mn=sleepMin%60; const p=[];
-  if(age.months<4)p.push(`${age.label} : les rythmes se mettent en place doucement. Observe ses signes de fatigue plutôt qu'une horloge.`);
-  else if(age.months<13)p.push(`${age.label} : il explore, attrape, babille. Le lait reste central, en complément des repas.`);
-  else p.push(`${age.label} : il marche, découvre et s'affirme. Les routines le rassurent.`);
-  const o=[]; if(sleepMin>0)o.push(`${h>0?`${h} h${mn>0?` ${mn}`:""}`:`${mn} min`} de sommeil`); if(feeds>0)o.push(`${feeds} repas`);
-  if(o.length)p.push(`Aujourd'hui : ${o.join(", ")}.`);
-  p.push(sleeping?`Il dort en ce moment — profites-en.`:`Prochaine sieste estimée vers ${nextNap}.`);
-  return p;
-}
-
-/* ── Petits composants ───────────────────────────────── */
-const KPI=({icon:Ic,label,val,sub,color})=>(
-  <div className="kpi">
-    <div className="k-top"><Ic size={14} color={color||"var(--sage-2)"}/> {label}</div>
-    <div className="k-val" style={color?{color}:null}>{val}</div>
-    {sub&&<div className="k-sub">{sub}</div>}
+  <div class="view-tabs">
+    <button class="view-tab active" id="tab-cycle" onclick="switchTab('cycle')">🌙 Roue</button>
+    <button class="view-tab" id="tab-calendar" onclick="switchTab('calendar')">📅 Calendrier</button>
+    <button class="view-tab" id="tab-obs" onclick="switchTab('obs')">📊 Observation</button>
   </div>
-);
 
-function Fil({phase,big,onPick}){
-  const idx=ORDER.indexOf(phase);
-  const W=360,H=big?96:72,pad=34,y=big?52:44;
-  const xs=ORDER.map((_,i)=>pad+i*((W-2*pad)/3));
-  const path=`M ${xs[0]} ${y} C ${xs[0]+40} ${y-26}, ${xs[1]-40} ${y+26}, ${xs[1]} ${y} S ${xs[2]-40} ${y-26}, ${xs[2]} ${y} S ${xs[3]-40} ${y+26}, ${xs[3]} ${y}`;
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{display:"block"}}>
-      <path d={path} fill="none" stroke="var(--line)" strokeWidth="3" strokeLinecap="round"/>
-      <path d={path} fill="none" stroke="var(--sage)" strokeWidth="3" strokeLinecap="round" strokeDasharray="600" strokeDashoffset={600-(idx/3)*600} style={{transition:"stroke-dashoffset .6s"}}/>
-      {ORDER.map((p,i)=>{const a=i===idx,dn=i<idx,P=PHASES[p];
-        return(<g key={p} style={{cursor:onPick?"pointer":"default"}} onClick={()=>onPick&&onPick(p)}>
-          <circle cx={xs[i]} cy={y} r={a?13:8} fill={a?"var(--sage)":dn?"var(--sage-soft)":"#fff"} stroke={a?"var(--sage)":"var(--line)"} strokeWidth="2"/>
-          {a&&<circle cx={xs[i]} cy={y} r={19} fill="none" stroke="var(--honey)" strokeWidth="2" opacity=".5"/>}
-          <text x={xs[i]} y={H-6} textAnchor="middle" fontFamily="Mulish" fontSize="10.5" fontWeight={a?700:600} fill={a?"var(--ink)":"var(--muted)"}>{P.short}</text>
-        </g>);
-      })}
-    </svg>
-  );
-}
-
-function LectureCard({lines,color}){
-  const [on,setOn]=useState(false);
-  const speak=useCallback(()=>{
-    try{ const s=window.speechSynthesis; if(!s)return; if(on){s.cancel();setOn(false);return;}
-      const u=new SpeechSynthesisUtterance(lines.join(" ")); u.lang="fr-FR"; u.onend=()=>setOn(false); s.cancel(); s.speak(u); setOn(true);
-    }catch(e){}
-  },[lines,on]);
-  useEffect(()=>()=>{try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}},[]);
-  return (
-    <div className="lecture" style={{"--phase":color}}>
-      <div className="head"><Leaf size={18} color={color}/><span className="t">Là où vous en êtes</span></div>
-      {lines.map((t,i)=><p key={i}>{t}</p>)}
-      <button className={`listen ${on?"on":""}`} onClick={speak}><Volume2 size={15}/> {on?"Arrêter":"Écouter"}</button>
+  <!-- ROUE -->
+  <div id="view-cycle">
+    <div class="wheel-wrap" id="wheelWrap"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 400 400" role="img" aria-label="Roue du cycle"></svg></div>
+    <p class="hint">Glisser le bord pour régler la durée · Toucher une zone pour l'expliquer</p>
+    <div class="legend" id="legend"></div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-lbl">Jour du cycle</div><div class="kpi-val" id="kDay">—</div><div class="kpi-sub" id="kPhase">—</div></div>
+      <div class="kpi"><div class="kpi-lbl">Ovulation estimée</div><div class="kpi-val" id="kOv">—</div><div class="kpi-sub" id="kOvS">—</div></div>
+      <div class="kpi"><div class="kpi-lbl">Prochaines règles</div><div class="kpi-val" id="kPer">—</div><div class="kpi-sub" id="kPerS">—</div></div>
+      <div class="kpi"><div class="kpi-lbl">Fenêtre fertile</div><div class="kpi-val" id="kFert">—</div><div class="kpi-sub" id="kFertS">—</div></div>
     </div>
-  );
-}
+    <div class="fert-card"><div class="fert-head"><span class="fl">Probabilité de conception</span><span class="fv" id="fLabel">—</span></div><div class="fert-track"><div class="fert-fill" id="fFill"></div></div></div>
+    <div class="settings">
+      <div class="s-title">⚙ Paramètres du cycle</div>
+      <div class="s-row"><div><div class="s-lbl">1ᵉʳ jour des dernières règles</div></div><input type="date" class="d-input" id="iDate"></div>
+      <div class="s-row"><div><div class="s-lbl">Durée du cycle</div><div class="s-sub">Lutéale ≈ 14 j · fixe</div></div><div class="stepper"><button class="s-btn" onclick="adj('cycleLen',-1)">−</button><div class="s-num" id="cycleN">28</div><button class="s-btn" onclick="adj('cycleLen',1)">+</button></div></div>
+      <div class="s-row"><div><div class="s-lbl">Durée des règles</div></div><div class="stepper"><button class="s-btn" onclick="adj('periodLen',-1)">−</button><div class="s-num" id="periodN">5</div><button class="s-btn" onclick="adj('periodLen',1)">+</button></div></div>
+    </div>
+    <div class="confidence" id="confidence"></div>
+    <div class="disclaimer"><span>⚠️</span><div>Estimations sur moyennes statistiques. Ni diagnostic médical, ni méthode contraceptive fiable. Pour une vraie symptothermie, formez-vous auprès de votre sage-femme.</div></div>
+  </div>
 
-/* ── ROUE INTERACTIVE ────────────────────────────────── */
-function CycleWheel({ cycleLen, periodLen, lastPeriod, onCycleChange, onPhaseTap }){
-  const svgRef=useRef(null);
-  const live=useRef({cycleLen,onCycleChange});
-  live.current.cycleLen=cycleLen; live.current.onCycleChange=onCycleChange;
+  <!-- CALENDRIER -->
+  <div id="view-calendar" style="display:none">
+    <div class="cal-wrap">
+      <div class="month-nav"><button class="month-btn" onclick="prevMonth()">‹</button><div class="month-lbl" id="monthLbl">—</div><button class="month-btn" onclick="nextMonth()">›</button></div>
+      <div class="cal-banner" id="calBanner"></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-summary" id="calSummary"></div>
+      <div><div class="logs-title">📋 Observations récentes</div><div id="logsList"></div></div>
+    </div>
+  </div>
 
-  useEffect(()=>{
-    const svg=svgRef.current; if(!svg)return;
-    let dragging=false, startA=0, startLen=28;
-    const getA=(e)=>{
-      const r=svg.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
-      const {clientX,clientY}=e.touches?e.touches[0]:e;
-      return Math.atan2(clientY-cy,clientX-cx)*180/Math.PI;
-    };
-    const onStart=(e)=>{
-      const r=svg.getBoundingClientRect(), sc=r.width/400;
-      const cx=r.left+r.width/2, cy=r.top+r.height/2;
-      const {clientX,clientY}=e.touches?e.touches[0]:e;
-      const dist=Math.hypot(clientX-cx,clientY-cy);
-      if(dist<GW.rMid*sc||dist>(GW.rOut+28)*sc)return;
-      e.preventDefault(); dragging=true; startA=getA(e); startLen=live.current.cycleLen;
-    };
-    const onMove=(e)=>{
-      if(!dragging)return; e.preventDefault();
-      let d=getA(e)-startA; if(d>180)d-=360; if(d<-180)d+=360;
-      const nl=Math.max(21,Math.min(40,startLen+Math.round(d/(360/startLen))));
-      if(nl!==live.current.cycleLen)live.current.onCycleChange(nl);
-    };
-    const onEnd=()=>{dragging=false;};
-    svg.addEventListener("touchstart",onStart,{passive:false});
-    svg.addEventListener("touchmove",onMove,{passive:false});
-    svg.addEventListener("touchend",onEnd);
-    svg.addEventListener("mousedown",onStart);
-    window.addEventListener("mousemove",onMove);
-    window.addEventListener("mouseup",onEnd);
-    return()=>{
-      svg.removeEventListener("touchstart",onStart);
-      svg.removeEventListener("touchmove",onMove);
-      svg.removeEventListener("touchend",onEnd);
-      svg.removeEventListener("mousedown",onStart);
-      window.removeEventListener("mousemove",onMove);
-      window.removeEventListener("mouseup",onEnd);
-    };
-  },[]);
-
-  const c=useMemo(()=>calcPreco({lastPeriod,cycleLen,periodLen}),[lastPeriod,cycleLen,periodLen]);
-  const step=360/cycleLen;
-  const fs=cycleLen<=24?11:cycleLen<=28?10:cycleLen<=35?9:8;
-  const P=CPH[c.todayPh];
-
-  const segments=useMemo(()=>Array.from({length:cycleLen},(_,i)=>{
-    const day=i+1, a1=i*step, a2=(i+1)*step, ph=phaseFor(day,c);
-    return {day,a1,a2,ph,isToday:day===c.dayIn};
-  }),[cycleLen,c,step]);
-
-  const todayMark=useMemo(()=>{
-    const ta=(c.dayIn-0.5)*step;
-    const tm=wPt(GW.rOut+20,ta), tl=wPt(GW.rOut+11,ta-3.5), tr=wPt(GW.rOut+11,ta+3.5);
-    return `${wF(tm.x)},${wF(tm.y)} ${wF(tl.x)},${wF(tl.y)} ${wF(tr.x)},${wF(tr.y)}`;
-  },[c.dayIn,step]);
-
-  const ovMark=useMemo(()=>wPt(GW.rOut+14,(c.ovDay-0.5)*step),[c.ovDay,step]);
-
-  return (
-    <svg ref={svgRef} viewBox="0 0 400 400" style={{width:"100%",display:"block",touchAction:"none",userSelect:"none"}} role="img" aria-label="Roue du cycle menstruel">
-      <defs>
-        <filter id="cwS"><feDropShadow dx="0" dy="4" stdDeviation="10" floodColor="#1C2820" floodOpacity=".18"/></filter>
-        <filter id="cwG"><feGaussianBlur stdDeviation="5"/></filter>
-      </defs>
-      <circle cx={GW.cx} cy={GW.cy} r={GW.rOut+6} fill="rgba(235,238,229,.55)"/>
-      {/* halos fenêtre fertile */}
-      {segments.filter(s=>s.day>=c.fStart&&s.day<=c.fEnd).map(s=>(
-        <path key={`g${s.day}`} d={wArc(GW.rMid-4,GW.rOut+10,s.a1,s.a2)} fill={CPH[s.ph].color} fillOpacity=".2" filter="url(#cwG)" style={{pointerEvents:"none"}}/>
-      ))}
-      {/* segments */}
-      {segments.map(s=>(
-        <path key={s.day} d={wArc(GW.rMid,GW.rOut,s.a1,s.a2)}
-          fill={CPH[s.ph].color} fillOpacity={s.isToday?1:.8}
-          stroke={s.isToday?"#fff":"none"} strokeWidth={s.isToday?2.5:0}
-          style={{cursor:"pointer"}}
-          onClick={()=>onPhaseTap(s.ph,s.day)}/>
-      ))}
-      {/* TOUS les numéros de jours */}
-      {segments.map(s=>{
-        const pos=wPt(GW.rLabel,(s.day-0.5)*step);
-        return (
-          <text key={`n${s.day}`} x={wF(pos.x)} y={wF(pos.y)}
-            textAnchor="middle" dominantBaseline="middle"
-            fill={s.isToday?"#fff":"rgba(255,255,255,.88)"}
-            fontSize={s.isToday?fs+1.5:fs}
-            fontWeight={s.isToday?800:700}
-            fontFamily="'Mulish',-apple-system,BlinkMacSystemFont,sans-serif"
-            style={{pointerEvents:"none"}}>
-            {s.day}
-          </text>
-        );
-      })}
-      {/* disque central */}
-      <circle cx={GW.cx} cy={GW.cy} r={GW.rIn} fill="white" filter="url(#cwS)"/>
-      {/* contenu centre */}
-      <text x={GW.cx} y={GW.cy-34} textAnchor="middle" fontSize="24" style={{pointerEvents:"none"}}>{P.emoji}</text>
-      <text x={GW.cx} y={GW.cy+7} textAnchor="middle" dominantBaseline="middle"
-        fill={P.color} fontFamily="'Fraunces','Georgia',serif" fontSize="34" fontWeight="700" letterSpacing="-1"
-        style={{pointerEvents:"none"}}>J{c.dayIn}</text>
-      <text x={GW.cx} y={GW.cy+28} textAnchor="middle" dominantBaseline="middle"
-        fill="#6E7A70" fontFamily="'Mulish',-apple-system,sans-serif" fontSize="10" fontWeight="800" letterSpacing=".08em"
-        style={{pointerEvents:"none"}}>{P.label.toUpperCase()}</text>
-      <text x={GW.cx} y={GW.cy+46} textAnchor="middle" dominantBaseline="middle"
-        fill="#3C5B49" fontFamily="'Mulish',-apple-system,sans-serif" fontSize="10.5" fontWeight="700"
-        style={{pointerEvents:"none"}}>{cycleLen} j · règles {periodLen} j</text>
-      {/* marqueur aujourd'hui */}
-      <polygon points={todayMark} fill="#1C2820" style={{pointerEvents:"none"}}/>
-      {/* étoile ovulation */}
-      <text x={wF(ovMark.x)} y={wF(ovMark.y)} textAnchor="middle" dominantBaseline="middle" fontSize="13" style={{pointerEvents:"none"}}>⭐</text>
-    </svg>
-  );
-}
-
-/* ── Fiche par phase (bottom sheet) ─────────────────── */
-function PhaseSheet({ phaseId, day, cycleCalc, onClose }){
-  if(!phaseId) return null;
-  const ph=CPH[phaseId], info=CINFO[phaseId];
-  const c=cycleCalc;
-  let range="";
-  if(phaseId==="menses")     range=`Jours 1 à ${c.P}`;
-  else if(phaseId==="follicular") range=`Jours ${c.P+1} à ${c.fStart-1}`;
-  else if(phaseId==="fertile")    range=`Jours ${c.fStart} à ${c.peakS-1} · fertilité élevée`;
-  else if(phaseId==="peak")       range=`Jours ${c.peakS} à ${c.fEnd} · fertilité maximale`;
-  else range=`Jours ${c.fEnd+1} à ${c.N} · ~14 j constants`;
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className="sheet" onClick={e=>e.stopPropagation()}>
-        <div className="grab"/>
-        <div style={{width:52,height:52,borderRadius:16,background:ph.soft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,marginBottom:12}}>{ph.emoji}</div>
-        <h2 style={{color:ph.color}}>{info.title}</h2>
-        <div style={{fontSize:13,color:"var(--muted)",fontWeight:700,marginBottom:14}}>Jour {day} · {range}</div>
-        {info.paras.map((p,i)=><p key={i} style={{fontSize:14.5,lineHeight:1.65,color:"#2e3d34",marginBottom:10}}>{p}</p>)}
-        <div style={{background:"#E5F5EE",border:"1px solid #A8DABC",borderRadius:14,padding:"11px 13px",fontSize:13,color:"#145c36",lineHeight:1.5,marginTop:12}}>{info.refine}</div>
-        <div className="note" style={{marginTop:10}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Estimation statistique. Ne remplace pas un suivi médical. La méthode calendaire seule n'est pas une contraception fiable.</span></div>
-        <button className="btn btn-p" style={{marginTop:16}} onClick={onClose}>Fermer</button>
+  <!-- OBSERVATION -->
+  <div id="view-obs" style="display:none">
+    <div class="obs-wrap">
+      <div class="month-nav"><button class="month-btn" onclick="prevCycle()">‹</button><div class="month-lbl" id="obsCycleLbl" style="font-size:17px">—</div><button class="month-btn" onclick="nextCycle()">›</button></div>
+      <div id="peakCallout"></div>
+      <div class="obs-scroll"><table class="obs-table" id="obsTable"></table></div>
+      <div class="obs-legend">
+        <div class="obs-leg">🩸 R = Règles</div><div class="obs-leg">S = Sec</div><div class="obs-leg">H = Humide</div>
+        <div class="obs-leg">M = Mouillé</div><div class="obs-leg">G = Glissant</div>
+        <div class="obs-leg"><span class="obs-peak-badge">S</span> Jour sommet</div>
+        <div class="obs-leg">1·2·3 = jours suivants</div>
       </div>
-    </div>
-  );
-}
-
-/* ── DASHBOARDS ──────────────────────────────────────── */
-function DashPreco({ profile, setProfile, onPhaseTap, flash }){
-  const cycleLen=profile.cycleLen||28, periodLen=profile.periodLen||5;
-  const c=useMemo(()=>calcPreco({lastPeriod:profile.lastPeriod,cycleLen,periodLen}),[profile.lastPeriod,cycleLen,periodLen]);
-  const lines=useMemo(()=>lecturePreco(c),[c]);
-  const setCycle=n=>setProfile(p=>({...p,cycleLen:n}));
-  const setPeriod=n=>setProfile(p=>({...p,periodLen:n}));
-  return (<>
-    <div style={{margin:"6px 0 0",touchAction:"none"}}>
-      <CycleWheel cycleLen={cycleLen} periodLen={periodLen} lastPeriod={profile.lastPeriod}
-        onCycleChange={setCycle} onPhaseTap={onPhaseTap}/>
-    </div>
-    <p className="wheel-hint">Glisser le bord · Toucher une zone pour l'expliquer</p>
-    <div className="leg-row">
-      {Object.values(CPH).map(p=>(
-        <div key={p.label} className="leg-pill"><div className="leg-dot" style={{background:p.color}}/>{p.emoji} {p.label}</div>
-      ))}
-    </div>
-    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
-    <LectureCard lines={lines} color="#7C9A86"/>
-    <div className="lbl"><TrendingUp size={14}/> Indicateurs</div>
-    <div className="kpis">
-      <KPI icon={Activity} label="Phase" val={CPH[c.todayPh].label} color={CPH[c.todayPh].color}/>
-      <KPI icon={Sparkles} label="Ovulation" val={c.dToOv>0?`J−${c.dToOv}`:c.dToOv===0?"Auj.":`+${Math.abs(c.dToOv)}j`} sub={`le ${fmt(c.nextOv)}`} color="var(--honey-2)"/>
-      <KPI icon={Heart} label="Fenêtre fertile" val={`J${c.fStart}–J${c.fEnd}`} sub={`${c.fEnd-c.fStart+1} jours estimés`} color="var(--clay)"/>
-      <KPI icon={Droplet} label="Prochaines règles" val={c.dToPer<=0?"Bientôt":`${c.dToPer} j`} sub={`le ${fmt(c.nextLP)}`}/>
-    </div>
-    <div className="lbl"><Sparkles size={14}/> Probabilité de conception</div>
-    <div className="card">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <span style={{fontSize:13,fontWeight:700,color:"var(--muted)"}}>Aujourd'hui</span>
-        <span style={{fontSize:14,fontWeight:800,color:c.fColor}}>{c.fLabel}</span>
+      <div class="obs-temp-chart card" style="margin-top:14px">
+        <div class="s-title" style="margin-bottom:10px">🌡 Courbe de température</div>
+        <svg id="tempChart" viewBox="0 0 340 150" style="width:100%;height:auto;display:block"></svg>
+        <div class="sens-hint" style="text-align:center;margin-top:6px">La hausse durable après le jour sommet confirme l'ovulation.</div>
       </div>
-      <div className="fert-track"><div className="fert-fill" style={{width:c.fPct+"%",background:c.fColor}}/></div>
-      <div style={{fontSize:11.5,color:"var(--muted)",marginTop:6,textAlign:"center"}}>Estimation indicative, jamais une méthode contraceptive.</div>
+      <div class="disclaimer" style="margin:14px 0 0"><span>💡</span><div>Le « jour sommet » est le dernier jour de glaire fertile (glissante/mouillée). Les jours 1, 2, 3 qui suivent permettent de confirmer le passage en phase infertile post-ovulatoire.</div></div>
     </div>
-    <div className="lbl"><Settings size={14}/> Paramètres</div>
-    <div className="card">
-      <div className="s-row">
-        <div><div className="s-lbl">1ᵉʳ jour des dernières règles</div></div>
-        <input type="date" style={{border:"1px solid var(--line)",background:"var(--bg)",borderRadius:12,padding:"9px 12px",fontSize:14,fontWeight:700,fontFamily:"inherit",color:"var(--ink)",outline:"none",maxWidth:155}}
-          value={profile.lastPeriod||isoOffset(-11)} onChange={e=>setProfile(p=>({...p,lastPeriod:e.target.value}))}/>
-      </div>
-      <div className="s-row">
-        <div><div className="s-lbl">Durée du cycle</div><div className="s-sub">Lutéale ≈ 14 j · fixe</div></div>
-        <div className="stepper">
-          <button className="s-btn" onClick={()=>setCycle(Math.max(21,cycleLen-1))}>−</button>
-          <div className="s-num">{cycleLen}</div>
-          <button className="s-btn" onClick={()=>setCycle(Math.min(40,cycleLen+1))}>+</button>
-        </div>
-      </div>
-      <div className="s-row">
-        <div><div className="s-lbl">Durée des règles</div></div>
-        <div className="stepper">
-          <button className="s-btn" onClick={()=>setPeriod(Math.max(2,periodLen-1))}>−</button>
-          <div className="s-num">{periodLen}</div>
-          <button className="s-btn" onClick={()=>setPeriod(Math.min(10,periodLen+1))}>+</button>
-        </div>
-      </div>
-    </div>
-    <div className="note" style={{marginTop:14}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Estimations calendaires indicatives. En cas de difficulté à concevoir (12 mois, ou 6 mois après 35 ans), consultez un professionnel.</span></div>
-  </>);
-}
+  </div>
+</div>
 
-function DashGross({ profile, flash }){
-  const g=useMemo(()=>calcGross(profile),[profile]);
-  const lines=useMemo(()=>lectureGross(g,profile.dpa),[g,profile]);
-  const f=g.fruit; const [kick,setKick]=useState(0);
-  return (<>
-    <div className="card" style={{marginTop:6}}>
-      <div style={{display:"flex",alignItems:"center",gap:14}}>
-        <div style={{width:62,height:62,borderRadius:18,background:g.col+"22",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:"none"}}>
-          <div style={{fontFamily:"Fraunces,serif",fontSize:23,fontWeight:600,color:g.col,lineHeight:1}}>{g.sa}</div><div style={{fontSize:10,fontWeight:700,color:g.col}}>SA</div>
-        </div>
-        <div style={{flex:1}}>
-          <div style={{fontWeight:800,fontSize:15}}>Bébé a la taille d'{"aeiouéâ".includes(f[0])?"une":"un"} {f}</div>
-          <div style={{fontSize:12.5,color:"var(--muted)"}}>{g.tri===1?"1er":g.tri===2?"2e":"3e"} trimestre · {g.pct}%</div>
-        </div>
-      </div>
-      <div style={{height:8,background:"var(--line)",borderRadius:99,marginTop:14,overflow:"hidden"}}><div style={{height:"100%",width:`${g.pct}%`,background:g.col,borderRadius:99}}/></div>
-      <div style={{fontSize:11.5,color:"var(--muted)",marginTop:8,textAlign:"center"}}>{g.weeksLeft>0?`Encore ~${g.weeksLeft} sem. · terme le ${fmt(profile.dpa)}`:"Terme atteint"}</div>
-    </div>
-    <div className="lbl"><Leaf size={14}/> La lecture de la semaine</div>
-    <LectureCard lines={lines} color={g.col}/>
-    <div className="lbl"><TrendingUp size={14}/> Indicateurs</div>
-    <div className="kpis">
-      <KPI icon={CalendarDays} label="Avancement" val={`${g.sa} SA`} sub={`${g.pct}%`} color={g.col}/>
-      <KPI icon={Activity} label="Trimestre" val={`T${g.tri}`}/>
-      <KPI icon={Baby} label="Avant terme" val={`${g.weeksLeft} sem.`} sub={`le ${fmt(profile.dpa)}`} color="var(--clay)"/>
-      <KPI icon={Footprints} label="Mouvements" val={`${kick}`} sub="aujourd'hui"/>
-    </div>
-    <div className="lbl"><Footprints size={14}/> Compteur de mouvements</div>
-    <div className="card">
-      <button className="btn" style={{width:"100%",background:"var(--sage)",color:"#fff",flexDirection:"column",padding:20,gap:4}} onClick={()=>setKick(k=>k+1)}>
-        <span style={{fontFamily:"Fraunces,serif",fontSize:38,lineHeight:1}}>{kick}</span><span style={{fontSize:12,fontWeight:700}}>Toucher à chaque mouvement</span>
-      </button>
-      <button className="btn btn-s" style={{width:"100%",marginTop:10}} onClick={()=>{flash(`${kick} mouvements`);setKick(0);}}>Terminer la session</button>
-    </div>
-    <div className="safe" style={{marginTop:14}}><AlertCircle size={16} style={{flex:"none",marginTop:1}}/><span>Saignements, douleurs intenses, fièvre ou baisse des mouvements : contactez votre sage-femme ou la maternité. Urgence : 15.</span></div>
-  </>);
-}
+<!-- Phase sheet -->
+<div class="overlay" id="phOverlay" onclick="closePhaseSheet()"></div>
+<div class="bsheet" id="phSheet">
+  <div class="grab"></div><div class="bs-ic" id="bsIc"></div><div class="bs-title" id="bsTitle"></div>
+  <div class="bs-range" id="bsRange"></div><div class="bs-body" id="bsBody"></div>
+  <button class="bs-close" onclick="closePhaseSheet()">Fermer</button>
+</div>
 
-const MOODS=[["😞","Difficile"],["😐","Mitigé"],["🙂","Ça va"],["😊","Bien"]];
-function DashPP({ profile, flash }){
-  const pp=useMemo(()=>ppInfo(profile.deliveryDate),[profile]);
-  const lines=useMemo(()=>lecturePP(pp),[pp]);
-  const [mood,setMood]=useState(null);
-  const [feeds,setFeeds]=useState(0);
-  const moodData=[3,2,2,3,2,3,3].map((v,i)=>({d:["L","M","M","J","V","S","D"][i],m:v}));
-  return (<>
-    <div className="card" style={{marginTop:6,textAlign:"center"}}>
-      <div className="eb" style={{color:"#CC7355"}}>Après l'accouchement</div>
-      <div style={{fontFamily:"Fraunces,serif",fontSize:34,fontWeight:600,margin:"8px 0"}}>{pp.label}</div>
-      <div style={{fontSize:13,color:"var(--muted)"}}>Un jour à la fois — vous faites au mieux.</div>
+<!-- Day log sheet -->
+<div class="overlay" id="dayOverlay" onclick="closeDaySheet()"></div>
+<div class="bsheet" id="daySheet">
+  <div class="grab"></div>
+  <div class="ds-date" id="dsDate"></div><div class="ds-phase" id="dsPhase"></div>
+  <div class="ds-section"><button class="period-btn" id="periodBtn" onclick="togglePeriod()">🩸 Début des règles</button></div>
+  <div class="ds-section">
+    <div class="ds-lbl">💧 Sensation (essuyage)</div>
+    <div class="seg" id="sensGrp">
+      <button class="seg-btn" onclick="pick('sens','Sec')">Sec</button>
+      <button class="seg-btn" onclick="pick('sens','Humide')">Humide</button>
+      <button class="seg-btn" onclick="pick('sens','Mouillé')">Mouillé</button>
+      <button class="seg-btn" onclick="pick('sens','Glissant')">Glissant ✦</button>
     </div>
-    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
-    <LectureCard lines={lines} color="#CC7355"/>
-    <div className="lbl"><Heart size={14}/> Votre humeur aujourd'hui</div>
-    <div className="card"><div style={{display:"flex",gap:8}}>
-      {MOODS.map(([e,l])=>(<button key={l} style={{flex:1,cursor:"pointer",textAlign:"center",padding:"12px 4px",border:mood===l?"1px solid var(--sage)":"1px solid var(--line)",borderRadius:16,background:mood===l?"var(--sage-soft)":""}} onClick={()=>{setMood(l);flash("Humeur notée");}}>
-        <div style={{fontSize:24}}>{e}</div><div style={{fontSize:11,marginTop:4,fontWeight:700}}>{l}</div></button>))}
-    </div></div>
-    <div className="lbl"><TrendingUp size={14}/> Tendance d'humeur</div>
-    <div className="card"><div style={{height:110}}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={moodData} margin={{top:8,right:6,left:-30,bottom:0}}>
-          <XAxis dataKey="d" tick={{fontSize:11,fill:"#6E7A70"}} axisLine={false} tickLine={false}/>
-          <YAxis domain={[0,3]} tick={false} axisLine={false} tickLine={false} width={10}/>
-          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--line)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[MOODS[v]?MOODS[v][1]:v,"Humeur"]} labelStyle={{display:"none"}}/>
-          <Line type="monotone" dataKey="m" stroke="#897FA6" strokeWidth={2.5} dot={{r:3,fill:"#897FA6"}}/>
-        </LineChart>
-      </ResponsiveContainer>
-    </div></div>
-    <div className="lbl"><Milk size={14}/> Nourrissage</div>
-    <div className="card"><div className="seg">
-      <div className="opt" onClick={()=>{setFeeds(f=>f+1);flash("Tétée notée");}}>+ Tétée ({feeds})</div>
-      <div className="opt" onClick={()=>{setFeeds(f=>f+1);flash("Biberon noté");}}>+ Biberon</div>
-    </div></div>
-    <div className="safe" style={{marginTop:14}}><Heart size={16} style={{flex:"none",marginTop:1}}/><span>Si la tristesse s'installe au-delà de deux semaines, ou en cas de pensées sombres : 3114 (souffrance psychique), votre médecin, ou le 15 en urgence.</span></div>
-  </>);
-}
+    <div class="sens-hint">« Glissant » = signe le plus fertile (glaire type blanc d'œuf).</div>
+  </div>
+  <div class="ds-section">
+    <div class="ds-lbl">👁 Aspect de la glaire</div>
+    <div class="seg" id="aspGrp">
+      <button class="seg-btn" onclick="pick('asp','Rien')">Rien</button>
+      <button class="seg-btn" onclick="pick('asp','Crémeux')">Crémeux</button>
+      <button class="seg-btn" onclick="pick('asp','Filant')">Filant</button>
+      <button class="seg-btn" onclick="pick('asp','Élastique')">Élastique</button>
+    </div>
+  </div>
+  <div class="ds-section">
+    <div class="ds-lbl">⚡ Pic / LH positif &nbsp;·&nbsp; ♥ Union</div>
+    <div class="seg">
+      <button class="seg-btn" id="eclairBtn" onclick="toggleField('eclair')">⚡ Pic ressenti</button>
+      <button class="seg-btn" id="unionBtn" onclick="toggleField('union')">♥ Union</button>
+    </div>
+  </div>
+  <div class="ds-section"><div class="ds-lbl">🌡 Température basale (°C)</div><input type="number" step="0.01" min="35.5" max="38" placeholder="ex. 36.55" id="dsBbt" class="ds-input"></div>
+  <div class="ds-section"><div class="ds-lbl">😊 Humeur</div><div class="seg" id="moodGrp">
+    <button class="seg-btn" style="font-size:18px;padding:8px 11px" onclick="pick('mood','Difficile')">😞</button>
+    <button class="seg-btn" style="font-size:18px;padding:8px 11px" onclick="pick('mood','Mitigé')">😐</button>
+    <button class="seg-btn" style="font-size:18px;padding:8px 11px" onclick="pick('mood','Bien')">🙂</button>
+    <button class="seg-btn" style="font-size:18px;padding:8px 11px" onclick="pick('mood','Super')">😊</button>
+  </div></div>
+  <div class="ds-section"><div class="ds-lbl">📝 Note</div><textarea class="ds-textarea" id="dsNote" placeholder="Symptômes, ressenti, événement…"></textarea></div>
+  <button class="ds-save" onclick="saveDayEntry()">✓ Enregistrer</button>
+  <button class="ds-cancel" onclick="closeDaySheet()">Annuler</button>
+</div>
 
-const MEDW={0:3.3,1:4.5,2:5.6,3:6.4,4:7,5:7.5,6:7.9,7:8.3,8:8.6,9:8.9,10:9.2,11:9.4,12:9.6,15:10.3,18:10.9,21:11.5,24:12.2};
-const WKEYS=Object.keys(MEDW).map(Number);
-function medW(m,sex){const f=sex==="f"?0.96:1;if(m<=0)return MEDW[0]*f;if(m>=24)return MEDW[24]*f;let lo=0,hi=24;for(let i=0;i<WKEYS.length-1;i++){if(m>=WKEYS[i]&&m<=WKEYS[i+1]){lo=WKEYS[i];hi=WKEYS[i+1];break;}}return(MEDW[lo]+(MEDW[hi]-MEDW[lo])*((m-lo)/(hi-lo)))*f;}
+<div class="toast" id="toast"></div>
 
-function DashBebe({ profile, flash }){
-  const age=useMemo(()=>ageInfo(profile.babyBirth),[profile]);
-  const [events,setEvents]=useState([]);
-  const [sleep,setSleep]=useState({active:false,startedAt:null,lastWake:null});
-  const [cc,setCc]=useState(false);
-  useEffect(()=>{(async()=>{try{if(window.storage){const e=await window.storage.get("nidc_bebe_ev_"+isoToday());if(e)setEvents(JSON.parse(e.value));const s=await window.storage.get("nidc_bebe_sleep");if(s)setSleep(JSON.parse(s.value));}}catch(e){}})()},[]);
-  const saveEv=(e)=>{setEvents(e);persist("nidc_bebe_ev_"+isoToday(),e);};
-  const saveSl=(s)=>{setSleep(s);persist("nidc_bebe_sleep",s);};
-  const feeds=events.filter(e=>e.type==="repas"), couches=events.filter(e=>e.type==="couche");
-  const sleepMin=events.filter(e=>e.type==="sommeil").reduce((a,e)=>a+(e.dur||0),0);
-  const nextNap=sleep.active?null:hhmm((sleep.lastWake||Date.now())+wakeWin(age.months)*60000);
-  const lines=useMemo(()=>lectureBebe(age,sleepMin,feeds.length,nextNap,sleep.active),[age,sleepMin,feeds,nextNap,sleep]);
-  const logFeed=(s)=>{saveEv([...events,{type:"repas",sub:s,time:Date.now()}]);flash(`${s} noté`);};
-  const logCouche=(s)=>{saveEv([...events,{type:"couche",sub:s,time:Date.now()}]);setCc(false);flash(`Couche (${s})`);};
-  const toggleSleep=()=>{ if(sleep.active){const dur=Math.max(1,Math.round((Date.now()-sleep.startedAt)/60000));saveEv([...events,{type:"sommeil",time:sleep.startedAt,dur}]);saveSl({active:false,startedAt:null,lastWake:Date.now()});flash(`Sommeil : ${dur} min`);}else{saveSl({...sleep,active:true,startedAt:Date.now()});flash("Sommeil démarré");} };
-  const sleepWeek=[12.5,13.1,11.8,12.9,13.4,12.2].map((h,i)=>({d:["L","M","M","J","V","S"][i],h})).concat([{d:"Auj",h:Math.round(sleepMin/60*10)/10}]);
-  const curve=[];for(let m=0;m<=24;m++){const md=medW(m,profile.babySex||"g"),sd=md*.11;curve.push({m,p3:Math.round((md-1.88*sd)*10)/10,band:Math.round(3.76*sd*10)/10,p50:Math.round(md*10)/10});}
-  const curveData=curve.map(r=>({...r,enfant:r.m===age.months?Math.round(medW(age.months,profile.babySex||"g")*10)/10:null}));
-  const evIcon=(t)=>t==="repas"?Milk:t==="couche"?Droplet:Moon, evCol=(t)=>t==="repas"?"var(--honey-2)":t==="couche"?"var(--comfort)":"var(--sage)";
-  return (<>
-    <div className="card" style={{marginTop:6,textAlign:"center"}}>
-      <div className="eb" style={{color:"#557A66"}}>{profile.name||"Votre bébé"}</div>
-      <div style={{fontFamily:"Fraunces,serif",fontSize:34,fontWeight:600,margin:"8px 0"}}>{age.label}</div>
-      <div style={{fontSize:13,color:"var(--muted)"}}>Chaque jour, un peu plus grand.</div>
-    </div>
-    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
-    <LectureCard lines={lines} color="#557A66"/>
-    <div className="lbl"><TrendingUp size={14}/> Aujourd'hui</div>
-    <div className="kpis">
-      <KPI icon={Moon} label="Sommeil" val={`${Math.floor(sleepMin/60)} h ${sleepMin%60}`} sub="cumulé" color="var(--sage)"/>
-      <KPI icon={Milk} label="Repas" val={`${feeds.length}`} sub="aujourd'hui" color="var(--honey-2)"/>
-      <KPI icon={Droplet} label="Couches" val={`${couches.length}`} sub={`${couches.filter(c=>c.sub==="Selle").length} selles`} color="var(--comfort)"/>
-      <KPI icon={Clock} label="Prochaine sieste" val={sleep.active?"Dort":nextNap||"—"} sub={sleep.active?"en cours":"estimée"} color="var(--sage-2)"/>
-    </div>
-    <div className="lbl"><Plus size={14}/> Noter en un geste</div>
-    <div className="logrow">
-      <div className="logbtn" onClick={()=>logFeed("Sein")}><div className="c" style={{background:"var(--honey-soft)"}}><Milk size={18} color="var(--honey-2)"/></div>Sein</div>
-      <div className="logbtn" onClick={()=>logFeed("Biberon")}><div className="c" style={{background:"var(--honey-soft)"}}><Milk size={18} color="var(--honey-2)"/></div>Biberon</div>
-      <div className="logbtn" onClick={toggleSleep}><div className="c" style={{background:"var(--sage-soft)"}}><Moon size={18} color="var(--sage)"/></div>{sleep.active?"Réveil":"Sommeil"}</div>
-      <div className="logbtn" onClick={()=>setCc(true)}><div className="c" style={{background:"var(--comfort-soft)"}}><Droplet size={18} color="var(--comfort)"/></div>Couche</div>
-    </div>
-    {cc&&<div className="card" style={{marginTop:10}}><div className="seg">{["Pipi","Selle","Mixte"].map(s=>(<div key={s} className="opt" onClick={()=>logCouche(s)}>{s}</div>))}<div className="opt" onClick={()=>setCc(false)}>Annuler</div></div></div>}
-    {events.length>0&&(<><div className="lbl"><Clock size={14}/> Journal</div>
-      <div className="card">{[...events].sort((a,b)=>b.time-a.time).map((e,i)=>{const Ic=evIcon(e.type);return(<div key={i} className="tl"><div className="c" style={{background:"var(--surface-2)"}}><Ic size={16} color={evCol(e.type)}/></div><div style={{flex:1}}><b>{e.type==="repas"?`Repas · ${e.sub}`:e.type==="couche"?`Couche · ${e.sub}`:`Sommeil · ${e.dur} min`}</b></div><span>{hhmm(e.time)}</span></div>);})}</div></>)}
-    <div className="lbl"><Moon size={14}/> Sommeil des 7 derniers jours</div>
-    <div className="card"><div style={{height:120}}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={sleepWeek} margin={{top:6,right:6,left:-24,bottom:0}}>
-          <defs><linearGradient id="gsl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#557A66" stopOpacity=".35"/><stop offset="100%" stopColor="#557A66" stopOpacity=".03"/></linearGradient></defs>
-          <XAxis dataKey="d" tick={{fontSize:11,fill:"#6E7A70"}} axisLine={false} tickLine={false}/>
-          <YAxis domain={[0,18]} tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={24}/>
-          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--line)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[`${v} h`,"Sommeil"]} labelStyle={{display:"none"}}/>
-          <Area type="monotone" dataKey="h" stroke="#3C5B49" strokeWidth={2.5} fill="url(#gsl)"/>
-        </AreaChart>
-      </ResponsiveContainer>
-    </div></div>
-    <div className="lbl"><Scale size={14}/> Courbe de poids (OMS)</div>
-    <div className="card"><div style={{height:150}}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={curveData} margin={{top:8,right:8,left:-22,bottom:0}}>
-          <Area type="monotone" dataKey="p3" stackId="b" stroke="none" fill="#fff" fillOpacity={0}/>
-          <Area type="monotone" dataKey="band" stackId="b" stroke="none" fill="#7C9A86" fillOpacity=".13"/>
-          <ReferenceLine x={age.months} stroke="#3C5B49" strokeWidth={1.2} strokeDasharray="3 3"/>
-          <XAxis dataKey="m" tick={{fontSize:10,fill:"#6E7A70"}} axisLine={false} tickLine={false} interval={3} tickFormatter={v=>v+"m"}/>
-          <YAxis tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={28} domain={["dataMin-1","dataMax+1"]}/>
-          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--line)",fontSize:12,fontFamily:"Mulish"}} formatter={(v,n)=>n==="p50"?[`${v} kg`,"Médiane"]:null} labelFormatter={l=>`${l} mois`}/>
-          <Line type="monotone" dataKey="p50" stroke="#DC9B4E" strokeWidth={1.5} strokeDasharray="5 4" dot={false}/>
-          <Line type="monotone" dataKey="enfant" stroke="#3C5B49" strokeWidth={2.8} dot={{r:4,fill:"#3C5B49"}} connectNulls/>
-        </AreaChart>
-      </ResponsiveContainer>
-    </div></div>
-    <div className="safe" style={{marginTop:14}}><AlertCircle size={16} style={{flex:"none",marginTop:1}}/><span>Fièvre avant 3 mois, teint gris, somnolence inhabituelle, refus de boire, gêne respiratoire : le 15.</span></div>
-  </>);
-}
-
-/* ── APP ─────────────────────────────────────────────── */
-const FICHES_COURT={
-  preconception:[
-    {id:"bbt",icon:Activity,title:"La température basale",tag:"Méthode",secs:[["Principe","La température s'élève de 0,3 à 0,5 °C après l'ovulation — ce plateau la confirme a posteriori."],["Comment","Au réveil, avant de se lever, à heure régulière, avec le même thermomètre."]]},
-    {id:"glaire",icon:Droplet,title:"La glaire cervicale",tag:"Fertilité",secs:[["Le signe clé","Abondante, claire et filante (blanc d'œuf) = fertilité élevée, ovulation proche."]]},
-    {id:"folates",icon:Leaf,title:"Folates & hygiène de vie",tag:"Préparer",secs:[["Folates","Supplémentation 1 à 2 mois avant la conception réduit le risque d'anomalies du tube neural."],["Le couple","La fertilité se joue à deux."]]},
-  ],
-  grossesse:[
-    {id:"alim",icon:Leaf,title:"Bien manger enceinte",tag:"Alimentation",secs:[["À éviter","Lait cru, charcuterie et poisson crus, viande peu cuite."],["Réflexes","Bien cuire, laver fruits et légumes."]]},
-    {id:"alerte",icon:AlertCircle,title:"Les signes d'alerte",tag:"Sécurité",secs:[["Sans attendre","Saignements, douleurs intenses, fièvre, baisse des mouvements."],["Qui","Sage-femme, maternité, ou le 15."]]},
-  ],
-  postpartum:[
-    {id:"bb",icon:Heart,title:"Baby blues ou plus ?",tag:"Bien-être",secs:[["Baby blues","Émotivité dans les premiers jours, s'estompe en 1–2 semaines."],["Au-delà","Dépression post-partum : se soigne très bien si accompagnée."]]},
-    {id:"rp",icon:Activity,title:"Rééducation périnéale",tag:"Corps",secs:[["Quand","Après la visite post-natale, sur prescription."],["Pourquoi","Pour prévenir fuites, douleurs et prolapsus."]]},
-  ],
-  bebe:[
-    {id:"som",icon:Moon,title:"Le sommeil 0–2 ans",tag:"Rythmes",secs:[["Avant 3-4 mois","Sommeil irrégulier et réveils fréquents : normaux."],["Signes","Bâillements, regard dans le vide → proposer la sieste."]]},
-    {id:"div",icon:Milk,title:"La diversification",tag:"Alimentation",secs:[["Quand","Entre 4 et 6 mois révolus."],["Comment","Un aliment à la fois ; le lait reste central."]]},
-  ],
+<script>
+const G={cx:200,cy:200,rOut:168,rMid:116,rIn:88,rLabel:144,gap:1.4,minC:21,maxC:40,minP:2,maxP:10};
+const PH={
+  menses:{label:'Règles',emoji:'🩸',color:'#D55E00',soft:'#FAEDE8'},
+  follicular:{label:'Folliculaire',emoji:'💧',color:'#56B4E9',soft:'#E4F3FC'},
+  fertile:{label:'Fenêtre fertile',emoji:'🌿',color:'#009E73',soft:'#CCF0E2'},
+  peak:{label:"Pic d'ovulation",emoji:'⭐',color:'#E69F00',soft:'#FEF2CC'},
+  luteal:{label:'Phase lutéale',emoji:'🌙',color:'#0072B2',soft:'#CCE4F5'}
+};
+const SENS_CODE={Sec:'S',Humide:'H','Mouillé':'M',Glissant:'G'};
+const SENS_COLOR={Sec:'#0072B2',Humide:'#56B4E9','Mouillé':'#009E73',Glissant:'#E69F00'};
+const INFO={
+  menses:{title:'Phase menstruelle',paras:["Le Jour 1 marque le début des règles. La muqueuse utérine, non fécondée, est éliminée. Durée : 3 à 7 jours.","Fatigue, crampes et variations d'humeur sont normales.","Projet bébé : pensez aux folates (B9), 1 à 2 mois avant la conception."],refine:"💧 Conception pendant les règles très peu probable, mais non nulle sur cycle court."},
+  follicular:{title:'Phase folliculaire',paras:["La FSH stimule les follicules ; les œstrogènes montent et épaississent la muqueuse.","Phase élastique : elle explique la variabilité du cycle. La lutéale, elle, reste ~14 j.","Énergie souvent en hausse ; la glaire se fluidifie."],refine:"💧 La glaire devient claire, abondante et élastique à l'approche de l'ovulation."},
+  fertile:{title:'Fenêtre fertile',paras:["Les spermatozoïdes survivent jusqu'à 5 jours. Un rapport ici peut féconder si l'ovulation suit.","Glaire très fertile : transparente, filante, comme du blanc d'œuf.","Vigilance maximale en projet contraceptif — le calendaire seul n'est pas fiable."],refine:"🔬 Un test LH annonce l'ovulation 24-36 h à l'avance. À combiner avec la glaire."},
+  peak:{title:"Pic d'ovulation",paras:["Un pic de LH libère l'ovule, qui survit 12-24 h. Fertilité maximale.","Parfois : douleur d'un côté, libido haute, glaire maximale.","Après l'ovulation, la température monte de 0,3-0,5 °C — le plateau la confirme."],refine:"🌡 La température prise au réveil confirme l'ovulation passée (elle ne la prédit pas)."},
+  luteal:{title:'Phase lutéale',paras:["Le corps jaune sécrète la progestérone, qui élève la température basale.","Durée ~14 j très constante.","Sans grossesse, les hormones chutent et les règles reviennent."],refine:"💊 SPM possible en fin de phase : seins sensibles, ballonnements — hormonal et normal."}
 };
 
-export default function App(){
-  const [profile,setProfile]=useState({
-    phase:null, name:"", lastPeriod:isoOffset(-11), cycleLen:28, periodLen:5,
-    dpa:isoOffset(112), deliveryDate:isoOffset(-20), babyBirth:isoMonthsAgo(5), babySex:"g"
-  });
-  const [tab,setTab]=useState("home");
-  const [sheet,setSheet]=useState(null);
-  const [phaseSheet,setPhaseSheet]=useState({open:false,phaseId:null,day:null,calc:null});
-  const [toast,setToast]=useState(null);
-  const [loaded,setLoaded]=useState(false);
+const LS_S='nid_settings_v3',LS_L='nid_logs_v3';
+let S={cycleLen:28,periodLen:5,lastPeriod:(()=>{const d=new Date();d.setDate(d.getDate()-11);return d.toISOString().slice(0,10);})()};
+let logs={};
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+let obsCycleOffset=0;
+let currentDay=null,draft={},curTab='cycle';
 
-  useEffect(()=>{(async()=>{try{if(window.storage){const p=await window.storage.get("nidc_profile");if(p)setProfile(JSON.parse(p.value));}}catch(e){}setLoaded(true);})()},[]);
-  useEffect(()=>{if(loaded)persist("nidc_profile",profile);},[profile,loaded]);
+function loadLS(){try{const s=localStorage.getItem(LS_S);if(s)S={...S,...JSON.parse(s)};const l=localStorage.getItem(LS_L);if(l)logs=JSON.parse(l);}catch(e){}}
+function saveLS(){try{localStorage.setItem(LS_S,JSON.stringify(S));localStorage.setItem(LS_L,JSON.stringify(logs));}catch(e){}}
+function saveLog(d,data){const c={...(logs[d]||{}),...data};for(const k of Object.keys(c))if(c[k]===null||c[k]===undefined||c[k]==='')delete c[k];if(Object.keys(c).length===0)delete logs[d];else logs[d]=c;saveLS();}
 
-  const flash=useCallback((m)=>{setToast(m);setTimeout(()=>setToast(null),1800);},[]);
-  const openPhase=(ph,day)=>{
-    const c=calcPreco({lastPeriod:profile.lastPeriod,cycleLen:profile.cycleLen||28,periodLen:profile.periodLen||5});
-    setPhaseSheet({open:true,phaseId:ph,day,calc:c});
-  };
+const iso=()=>new Date().toISOString().slice(0,10);
+const addD=(s,n)=>{const d=new Date(s);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+const fmtD=(s,o={day:'numeric',month:'short'})=>new Date(s).toLocaleDateString('fr-FR',o);
+const fmtMY=(y,m)=>new Date(y,m,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}).replace(/^\w/,c=>c.toUpperCase());
 
-  if(!loaded) return (<><style>{CSS}</style><div className="stage nr"><div className="device"/></div></>);
+function periodStarts(){const f=Object.entries(logs).filter(([,v])=>v&&v.isPeriodStart).map(([k])=>k);return [...new Set([S.lastPeriod,...f])].sort();}
+function phaseForDay(dayIn){const N=S.cycleLen,P=S.periodLen,ovDay=N-14,fStart=Math.max(P+1,ovDay-5),peakS=Math.max(fStart,ovDay-1),fEnd=Math.min(N,ovDay+1);let ph;if(dayIn<=P)ph='menses';else if(dayIn<fStart)ph='follicular';else if(dayIn>=peakS&&dayIn<=fEnd)ph='peak';else if(dayIn>=fStart&&dayIn<peakS)ph='fertile';else ph='luteal';return{dayIn,phase:ph,ovDay,fStart,peakS,fEnd,isOv:dayIn===ovDay,inFert:dayIn>=fStart&&dayIn<=fEnd};}
+function cycleStartFor(dateStr){const date=new Date(dateStr),starts=periodStarts();if(!starts.length)return null;let ref=null;for(let i=starts.length-1;i>=0;i--){if(new Date(starts[i])<=date){ref=starts[i];break;}}if(!ref){let c=starts[0];while(new Date(c)>date)c=addD(c,-S.cycleLen);return c;}return ref;}
+function dayInfo(dateStr){const ref=cycleStartFor(dateStr);if(!ref)return null;const dayIn=Math.floor((new Date(dateStr)-new Date(ref))/864e5)+1;const adj=((dayIn-1)%S.cycleLen+S.cycleLen)%S.cycleLen+1;return phaseForDay(adj);}
+function todayInfo(){return dayInfo(iso())||phaseForDay(1);}
+function nextDates(){const lp=new Date(S.lastPeriod),now=new Date(),el=Math.floor((now-lp)/864e5),cs=Math.floor(Math.max(0,el)/S.cycleLen);const nlp=new Date(lp);nlp.setDate(lp.getDate()+(cs+1)*S.cycleLen);const nov=new Date(nlp);nov.setDate(nlp.getDate()-14);return{nextLP:nlp.toISOString().slice(0,10),nextOv:nov.toISOString().slice(0,10),dToPer:Math.round((nlp-now)/864e5),dToOv:Math.round((nov-now)/864e5)};}
+function monthProjection(y,m){const N=S.cycleLen,P=S.periodLen,ovDay=N-14,fStart=Math.max(P+1,ovDay-5),fEnd=Math.min(N,ovDay+1);const f=`${y}-${String(m+1).padStart(2,'0')}-01`,info=dayInfo(f);if(!info)return{};const daysToOv=((ovDay-info.dayIn)%N+N)%N,ovDate=addD(f,daysToOv);const ff=addD(ovDate,-(ovDay-fStart)),ft=addD(ovDate,fEnd-ovDay);const mo=new Date(y,m,1),me=new Date(y,m+1,0);return{ovDate:new Date(ovDate)>=mo&&new Date(ovDate)<=me?ovDate:null,fertFrom:new Date(ff)>=mo?ff:null,fertTo:new Date(ft)<=me?ft:null};}
 
-  const P=profile.phase?PHASES[profile.phase]:null;
-  const hello=new Date().getHours()<12?"Bonjour":new Date().getHours()<18?"Bel après-midi":"Bonsoir";
-
-  if(!profile.phase) return (<><style>{CSS}</style><div className="stage nr"><div className="device">
-    <div className="screen fade" style={{paddingTop:0}}>
-      <div style={{textAlign:"center",margin:"34px 0 6px"}}>
-        <div style={{width:54,height:54,borderRadius:18,background:"var(--sage)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:14}}><Leaf size={26} color="#fff"/></div>
-        <h1 className="h1 sf" style={{fontSize:28}}>Bienvenue dans Nid</h1>
-        <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.55,margin:"8px 18px 0"}}>Un accompagnement bienveillant et confidentiel, du projet d'enfant aux premières années.</p>
-      </div>
-      <div className="lbl">Comment vous appeler ?</div>
-      <input className="input" placeholder="Votre prénom (facultatif)" value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})}/>
-      <div className="lbl">Où en êtes-vous ?</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {ORDER.map(k=>{const Pp=PHASES[k];return(
-          <button key={k} className="card" style={{cursor:"pointer",textAlign:"left",padding:16,border:"1px solid var(--line)"}} onClick={()=>{setProfile({...profile,phase:k});setTab("home");}}>
-            <Pp.Icon size={22} color={Pp.color}/><div style={{fontWeight:800,fontSize:14.5,marginTop:8}}>{Pp.label}</div>
-          </button>);})}
-      </div>
-    </div>
-  </div></div></>);
-
-  return (<><style>{CSS}</style><div className="stage nr"><div className="device">
-
-    {tab==="home" && (
-      <div className="screen fade" key={"h"+profile.phase}>
-        <div className="top">
-          <div><div className="eb">{hello}{profile.name?`, ${profile.name}`:""}</div><h1 className="h1 sf">Votre nid</h1></div>
-          <button className="chip" onClick={()=>setTab("parcours")}><P.Icon size={15}/> {P.short}</button>
-        </div>
-        {profile.phase==="preconception" && <DashPreco profile={profile} setProfile={setProfile} onPhaseTap={openPhase} flash={flash}/>}
-        {profile.phase==="grossesse"     && <DashGross profile={profile} flash={flash}/>}
-        {profile.phase==="postpartum"    && <DashPP    profile={profile} flash={flash}/>}
-        {profile.phase==="bebe"          && <DashBebe  profile={profile} flash={flash}/>}
-      </div>
-    )}
-
-    {tab==="parcours" && (
-      <div className="screen fade" key="parcours">
-        <div className="top"><div><div className="eb">Le Fil</div><h1 className="h1 sf">Votre parcours</h1></div></div>
-        <div className="card" style={{marginTop:6}}><Fil phase={profile.phase} big onPick={p=>{setProfile({...profile,phase:p});setTab("home");}}/>
-          <div style={{fontSize:12.5,color:"var(--muted)",textAlign:"center",marginTop:4}}>Un seul compagnon, de la préconception aux 2 ans de l'enfant.</div>
-        </div>
-        <div className="lbl"><Map size={14}/> Les quatre temps</div>
-        {ORDER.map(k=>{const Pp=PHASES[k],cur=profile.phase===k;return(
-          <div key={k} className={`phasecard ${cur?"cur":""}`} onClick={()=>{setProfile({...profile,phase:k});setTab("home");}}>
-            <div className="ic" style={{background:Pp.color+"22"}}><Pp.Icon size={22} color={Pp.color}/></div>
-            <div style={{flex:1}}><b style={{fontSize:15,display:"block"}}>{Pp.label}</b><span style={{fontSize:12.5,color:"var(--muted)"}}>{cur?"phase actuelle":"changer pour cette phase"}</span></div>
-            {cur?<span className="badge" style={{background:"var(--sage-soft)",color:"var(--sage)"}}>en cours</span>:<ChevronRight size={18} color="var(--muted)"/>}
-          </div>);})}
-      </div>
-    )}
-
-    {tab==="learn" && (
-      <div className="screen fade" key="learn">
-        <div className="top"><div><div className="eb">Bibliothèque · {P?.short}</div><h1 className="h1 sf">Comprendre</h1></div></div>
-        {(FICHES_COURT[profile.phase]||[]).map(f=>(
-          <div key={f.id} className="card" style={{marginBottom:11,cursor:"pointer"}} onClick={()=>setSheet(f)}>
-            <div style={{display:"flex",alignItems:"center",gap:13}}>
-              <div style={{width:42,height:42,borderRadius:13,background:"var(--sage-soft)",display:"flex",alignItems:"center",justifyContent:"center",flex:"none"}}><f.icon size={19} color="var(--sage)"/></div>
-              <div style={{flex:1}}><div className="sf" style={{fontSize:16,fontWeight:600,lineHeight:1.2}}>{f.title}</div><span className="badge" style={{background:"var(--honey-soft)",color:"var(--honey-2)",marginTop:4}}>{f.tag}</span></div>
-              <ChevronRight size={18} color="var(--muted)"/>
-            </div>
-          </div>
-        ))}
-        <div className="note" style={{marginTop:6}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Information générale, à valider avec un professionnel de santé.</span></div>
-      </div>
-    )}
-
-    {tab==="profil" && (
-      <div className="screen fade" key="profil">
-        <div className="top"><div><div className="eb">Votre espace</div><h1 className="h1 sf">Profil</h1></div></div>
-        <div className="card" style={{marginTop:6}}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>Prénom</div>
-          <input className="input" placeholder="Votre prénom" value={profile.name} onChange={e=>setProfile({...profile,name:e.target.value})}/>
-        </div>
-        <div className="lbl">Réglages de la phase</div>
-        <div className="card">
-          {profile.phase==="grossesse"&&(<><div style={{fontSize:13,fontWeight:700,margin:"0 0 6px"}}>Date prévue d'accouchement</div><input className="input" type="date" value={profile.dpa} onChange={e=>setProfile({...profile,dpa:e.target.value})}/></>)}
-          {profile.phase==="postpartum"&&(<><div style={{fontSize:13,fontWeight:700,margin:"0 0 6px"}}>Date de l'accouchement</div><input className="input" type="date" value={profile.deliveryDate} onChange={e=>setProfile({...profile,deliveryDate:e.target.value})}/></>)}
-          {profile.phase==="bebe"&&(<>
-            <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>Date de naissance de bébé</div>
-            <input className="input" type="date" value={profile.babyBirth} onChange={e=>setProfile({...profile,babyBirth:e.target.value})} style={{marginBottom:14}}/>
-            <div style={{fontSize:13,fontWeight:700,margin:"0 0 8px"}}>Sexe (courbes)</div>
-            <div className="seg"><div className={`opt ${profile.babySex==="g"?"on":""}`} onClick={()=>setProfile({...profile,babySex:"g"})}>Garçon</div><div className={`opt ${profile.babySex==="f"?"on":""}`} onClick={()=>setProfile({...profile,babySex:"f"})}>Fille</div></div>
-          </>)}
-          {profile.phase==="preconception"&&<div style={{fontSize:13.5,color:"var(--muted)"}}>Les réglages du cycle se trouvent dans l'onglet Accueil.</div>}
-        </div>
-        <div className="lbl">Confidentialité</div>
-        <div className="card" style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-          <Heart size={18} color="var(--sage)" style={{flex:"none",marginTop:1}}/>
-          <div style={{fontSize:13,color:"#34403a",lineHeight:1.5}}>Vos données restent privées et ne sont jamais revendues. Export et suppression disponibles sur demande.</div>
-        </div>
-      </div>
-    )}
-
-    <div className={`toast ${toast?"show":""}`}><Check size={15}/> {toast}</div>
-
-    {/* Fiche générique */}
-    {sheet && (
-      <div className="overlay" onClick={()=>setSheet(null)}>
-        <div className="sheet" onClick={e=>e.stopPropagation()}>
-          <div className="grab"/>
-          <div style={{width:40,height:40,borderRadius:12,background:"var(--sage-soft)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}><sheet.icon size={19} color="var(--sage)"/></div>
-          <h2>{sheet.title}</h2>
-          {sheet.secs.map((s,i)=>(<div key={i} className="fiche-sec"><h4>{s[0]}</h4><p>{s[1]}</p></div>))}
-          <div className="note" style={{marginTop:6}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Information générale, à valider avec un professionnel.</span></div>
-          <button className="btn btn-s" style={{marginTop:14,width:"100%"}} onClick={()=>setSheet(null)}>Fermer</button>
-        </div>
-      </div>
-    )}
-
-    {/* Fiche phase du cycle */}
-    {phaseSheet.open && <PhaseSheet phaseId={phaseSheet.phaseId} day={phaseSheet.day} cycleCalc={phaseSheet.calc} onClose={()=>setPhaseSheet({open:false,phaseId:null,day:null,calc:null})}/>}
-
-    <div className="tabbar">
-      {[["home","Accueil",Home],["parcours","Parcours",Map],["learn","Comprendre",BookOpen],["profil","Profil",Settings]].map(([k,l,Ic])=>(
-        <button key={k} className={`tab ${tab===k?"active":""}`} onClick={()=>setTab(k)}><span className="dot"/><Ic size={21}/><span>{l}</span></button>
-      ))}
-    </div>
-
-  </div></div></>);
+/* Jour sommet : dernier jour Glissant/Mouillé d'une fenêtre fertile dans le cycle */
+function peakDayFor(cycleStart){
+  let peak=null;
+  for(let i=0;i<S.cycleLen;i++){const d=addD(cycleStart,i),l=logs[d];if(l&&(l.sens==='Glissant'||l.sens==='Mouillé'))peak=d;}
+  return peak;
 }
+
+/* ---- ROUE ---- */
+function wPt(r,deg){const a=(deg-90)*Math.PI/180;return{x:G.cx+r*Math.cos(a),y:G.cy+r*Math.sin(a)};}
+function wF(v){return v.toFixed(2);}
+function wArc(r1,r2,a1,a2){const g=G.gap/2,p1=wPt(r2,a1+g),p2=wPt(r2,a2-g),p3=wPt(r1,a2-g),p4=wPt(r1,a1+g),lg=(a2-a1)>180?1:0;return `M${wF(p1.x)},${wF(p1.y)} A${r2},${r2},0,${lg},1,${wF(p2.x)},${wF(p2.y)} L${wF(p3.x)},${wF(p3.y)} A${r1},${r1},0,${lg},0,${wF(p4.x)},${wF(p4.y)}Z`;}
+function drawWheel(){
+  const c=todayInfo(),N=S.cycleLen,step=360/N;let h='';
+  h+=`<defs><filter id="fi"><feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#1C2820" flood-opacity=".18"/></filter><filter id="fg"><feGaussianBlur stdDeviation="5"/></filter></defs>`;
+  h+=`<circle cx="${G.cx}" cy="${G.cy}" r="${G.rOut+6}" fill="rgba(235,238,229,.55)"/>`;
+  for(let d=c.fStart;d<=c.fEnd;d++){const a1=(d-1)*step,a2=d*step,ph=phaseForDay(d).phase;h+=`<path d="${wArc(G.rMid-4,G.rOut+10,a1,a2)}" fill="${PH[ph].color}" fill-opacity=".22" filter="url(#fg)" pointer-events="none"/>`;}
+  for(let d=1;d<=N;d++){const a1=(d-1)*step,a2=d*step,ph=phaseForDay(d).phase,td=d===c.dayIn;h+=`<path d="${wArc(G.rMid,G.rOut,a1,a2)}" fill="${PH[ph].color}" fill-opacity="${td?1:.8}" stroke="${td?'#fff':'none'}" stroke-width="${td?2.5:0}" data-d="${d}" data-ph="${ph}" style="cursor:pointer"/>`;}
+  const fs=N<=24?11:N<=28?10:N<=35?9:8;
+  for(let d=1;d<=N;d++){const p=wPt(G.rLabel,(d-.5)*step),td=d===c.dayIn;h+=`<text x="${wF(p.x)}" y="${wF(p.y)}" text-anchor="middle" dominant-baseline="middle" fill="${td?'#fff':'rgba(255,255,255,.88)'}" font-size="${td?fs+1.5:fs}" font-weight="${td?800:700}" font-family="-apple-system,'Mulish',sans-serif" pointer-events="none">${d}</text>`;}
+  h+=`<circle cx="${G.cx}" cy="${G.cy}" r="${G.rIn}" fill="white" filter="url(#fi)"/>`;
+  const P=PH[c.phase];
+  h+=`<text x="${G.cx}" y="${G.cy-34}" text-anchor="middle" font-size="24" pointer-events="none">${P.emoji}</text>`;
+  h+=`<text x="${G.cx}" y="${G.cy+7}" text-anchor="middle" dominant-baseline="middle" fill="${P.color}" font-family="'Fraunces',serif" font-size="34" font-weight="700" letter-spacing="-1" pointer-events="none">J${c.dayIn}</text>`;
+  h+=`<text x="${G.cx}" y="${G.cy+28}" text-anchor="middle" dominant-baseline="middle" fill="#6E7A70" font-size="10" font-weight="800" letter-spacing=".08em" pointer-events="none">${P.label.toUpperCase()}</text>`;
+  h+=`<text x="${G.cx}" y="${G.cy+46}" text-anchor="middle" dominant-baseline="middle" fill="#3C5B49" font-size="10.5" font-weight="700" pointer-events="none">${N}j · règles ${S.periodLen}j</text>`;
+  const ta=(c.dayIn-.5)*step,tm=wPt(G.rOut+20,ta),tl=wPt(G.rOut+11,ta-3.5),tr=wPt(G.rOut+11,ta+3.5);
+  h+=`<polygon points="${wF(tm.x)},${wF(tm.y)} ${wF(tl.x)},${wF(tl.y)} ${wF(tr.x)},${wF(tr.y)}" fill="#1C2820" pointer-events="none"/>`;
+  const oa=(c.ovDay-.5)*step,op=wPt(G.rOut+14,oa);
+  h+=`<text x="${wF(op.x)}" y="${wF(op.y)}" text-anchor="middle" dominant-baseline="middle" font-size="13" pointer-events="none">⭐</text>`;
+  const svg=document.getElementById('wheelSvg');svg.innerHTML=h;
+  svg.querySelectorAll('[data-ph]').forEach(el=>el.addEventListener('click',()=>openPhaseSheet(el.dataset.ph,+el.dataset.d)));
+}
+function updateKPIs(){
+  const c=todayInfo(),P=PH[c.phase],nd=nextDates();
+  document.getElementById('badge').textContent=`Auj. J${c.dayIn}`;
+  const kd=document.getElementById('kDay');kd.textContent=`J${c.dayIn}`;kd.style.color=P.color;
+  document.getElementById('kPhase').textContent=`${P.emoji} ${P.label}`;
+  const ov=document.getElementById('kOv');
+  if(nd.dToOv>0){ov.textContent=`J−${nd.dToOv}`;document.getElementById('kOvS').textContent=`dans ${nd.dToOv} j`;}
+  else if(nd.dToOv===0){ov.textContent="Auj.";document.getElementById('kOvS').textContent="estimée";}
+  else{ov.textContent=`+${Math.abs(nd.dToOv)} j`;document.getElementById('kOvS').textContent="passée";}
+  document.getElementById('kPer').textContent=nd.dToPer<=0?'Bientôt':`${nd.dToPer} j`;
+  document.getElementById('kPerS').textContent=fmtD(nd.nextLP);
+  document.getElementById('kFert').textContent=`J${c.fStart}–J${c.fEnd}`;
+  document.getElementById('kFertS').textContent=`${c.fEnd-c.fStart+1} j estimés`;
+  const dv=c.dayIn-c.ovDay;let fPct,fLabel,fColor;
+  if(c.dayIn<=S.periodLen){fPct=2;fLabel='Très faible';fColor=PH.follicular.color;}
+  else if(c.dayIn<c.fStart){fPct=5;fLabel='Faible';fColor=PH.follicular.color;}
+  else if(dv<=-3){fPct=38;fLabel='Élevée';fColor=PH.fertile.color;}
+  else if(dv>=-2&&dv<=0){fPct=94;fLabel='Maximale ⭐';fColor=PH.peak.color;}
+  else if(dv===1){fPct=16;fLabel='Décroissante';fColor=PH.luteal.color;}
+  else{fPct=2;fLabel='Faible';fColor=PH.luteal.color;}
+  const fl=document.getElementById('fLabel');fl.textContent=fLabel;fl.style.color=fColor;
+  const ff=document.getElementById('fFill');ff.style.width=fPct+'%';ff.style.backgroundColor=fColor;
+  document.getElementById('cycleN').textContent=S.cycleLen;document.getElementById('periodN').textContent=S.periodLen;
+  const conf=document.getElementById('confidence');
+  if(S.cycleLen<24){conf.style.cssText='margin:12px 16px 0;background:#FFF8E8;border:1px solid #ECD6A8;border-radius:15px;padding:11px 13px;font-size:12.5px;color:#6b4e1d;line-height:1.5;display:flex;gap:8px;font-weight:600';conf.innerHTML='<span>⚠️</span><div>Cycle court : l\'ovulation peut survenir très tôt. Glaire et tests LH sont précieux pour affiner.</div>';}
+  else if(S.cycleLen>35){conf.style.cssText='margin:12px 16px 0;background:#E6F4FB;border:1px solid #A8D4EE;border-radius:15px;padding:11px 13px;font-size:12.5px;color:#1a4a6b;line-height:1.5;display:flex;gap:8px;font-weight:600';conf.innerHTML='<span>ℹ️</span><div>Cycle long : phase folliculaire étendue. Tests LH et symptothermie aident à affiner.</div>';}
+  else{conf.style.cssText='margin:12px 16px 0;background:#E6F5EE;border:1px solid #A8DABC;border-radius:15px;padding:11px 13px;font-size:12.5px;color:#145c36;line-height:1.5;display:flex;gap:8px;font-weight:600';conf.innerHTML='<span>✅</span><div>Durée habituelle. Estimations plus fiables, sans remplacer l\'observation de vos signes.</div>';}
+}
+
+/* ---- CALENDRIER ---- */
+function renderCalendar(){
+  document.getElementById('monthLbl').textContent=fmtMY(calYear,calMonth);
+  const today=iso(),dIM=new Date(calYear,calMonth+1,0).getDate(),fdow=new Date(calYear,calMonth,1).getDay(),off=fdow===0?6:fdow-1,proj=monthProjection(calYear,calMonth);
+  let banner='';
+  if(proj.ovDate)banner+=`<span>⭐ Ovulation ~<strong>${fmtD(proj.ovDate)}</strong></span>`;
+  if(banner&&proj.fertFrom)banner+=`<span class="cb-sep">·</span>`;
+  if(proj.fertFrom&&proj.fertTo)banner+=`<span>🌿 Fertile <strong>${fmtD(proj.fertFrom,{day:'numeric'})}</strong>–<strong>${fmtD(proj.fertTo)}</strong></span>`;
+  if(!banner)banner='<span>Projection selon vos paramètres</span>';
+  document.getElementById('calBanner').innerHTML=banner;
+  const DL=['Lu','Ma','Me','Je','Ve','Sa','Di'];let html=DL.map(d=>`<div class="cal-head">${d}</div>`).join('');
+  for(let i=0;i<off;i++)html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=dIM;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,info=dayInfo(ds),log=logs[ds]||{},isT=ds===today,isFut=ds>today,ph=info?info.phase:'follicular';
+    const cycleStart=cycleStartFor(ds),peak=cycleStart?peakDayFor(cycleStart):null;
+    const dot=Object.keys(log).length?'<div class="cal-dot"></div>':'';
+    const ecl=log.eclair?'<div class="cal-eclair">⚡</div>':'';
+    let icon=ph==='follicular'?'':PH[ph].emoji;if(info&&info.isOv)icon='⭐';if(log.isPeriodStart)icon='🩸';
+    let peakBadge='';
+    if(peak){const pdi=Math.floor((new Date(ds)-new Date(peak))/864e5);if(pdi===0)peakBadge='<div class="cal-peak">S</div>';else if(pdi>=1&&pdi<=3)peakBadge=`<div class="cal-peak">${pdi}</div>`;}
+    html+=`<div class="cal-day ${ph}${isT?' today':''}${isFut?' future':''}" onclick="openDaySheet('${ds}')">${dot}${ecl}<span class="cal-num">${d}</span>${icon?`<span class="cal-icon">${icon}</span>`:''}${peakBadge}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+  const ti=todayInfo(),nd=nextDates();
+  document.getElementById('calSummary').innerHTML=`<div class="cs-card"><div class="cs-lbl">Aujourd'hui</div><div class="cs-val" style="color:${PH[ti.phase].color}">${PH[ti.phase].emoji} J${ti.dayIn}</div><div class="cs-sub">${PH[ti.phase].label}</div></div><div class="cs-card"><div class="cs-lbl">Prochaines règles</div><div class="cs-val">${nd.dToPer<=0?'Bientôt':nd.dToPer+' j'}</div><div class="cs-sub">${fmtD(nd.nextLP)}</div></div>`;
+  const recent=Object.entries(logs).filter(([,v])=>v&&Object.keys(v).length).sort(([a],[b])=>b.localeCompare(a)).slice(0,10);
+  document.getElementById('logsList').innerHTML=recent.length?recent.map(([date,v])=>{const info=dayInfo(date)||{phase:'follicular'},ph=PH[info.phase],tags=[];if(v.isPeriodStart)tags.push('🩸 Règles');if(v.sens)tags.push(`💧 ${v.sens}`);if(v.eclair)tags.push('⚡ Pic');if(v.union)tags.push('♥');if(v.bbt)tags.push(`🌡 ${v.bbt}°`);if(v.mood){const m={Difficile:'😞',Mitigé:'😐',Bien:'🙂',Super:'😊'};tags.push(m[v.mood]||'');}return `<div class="log-item" onclick="openDaySheet('${date}')"><div class="li-date">${fmtD(date)}</div><div class="li-ic" style="background:${ph.soft}">${ph.emoji}</div><div class="li-body"><div class="li-tags">${tags.join(' · ')||'—'}</div>${v.note?`<div class="li-note">📝 ${v.note}</div>`:''}</div></div>`;}).join(''):`<div class="log-empty">Aucune observation notée.<br>Touchez un jour pour commencer.</div>`;
+}
+function prevMonth(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function nextMonth(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+/* ---- TABLEAU D'OBSERVATION ---- */
+function renderObs(){
+  const starts=periodStarts();
+  // cycle courant = celui d'aujourd'hui, offset négatif = cycles passés
+  let baseStart=cycleStartFor(iso())||S.lastPeriod;
+  // build list of distinct cycle starts to navigate
+  let allStarts=[...starts];
+  // ensure baseStart present
+  if(!allStarts.includes(baseStart))allStarts.push(baseStart);
+  allStarts=[...new Set(allStarts)].sort();
+  let idx=allStarts.indexOf(baseStart)+obsCycleOffset;
+  idx=Math.max(0,Math.min(allStarts.length-1,idx));
+  const cycleStart=allStarts[idx];
+  const len=S.cycleLen;
+  document.getElementById('obsCycleLbl').textContent=`Cycle du ${fmtD(cycleStart,{day:'numeric',month:'short',year:'numeric'})}`;
+  const peak=peakDayFor(cycleStart);
+  // peak callout
+  const pc=document.getElementById('peakCallout');
+  if(peak){const pidx=Math.floor((new Date(peak)-new Date(cycleStart))/864e5)+1;pc.innerHTML=`<div class="peak-callout"><span>⭐</span><div><strong>Jour sommet détecté : J${pidx}</strong> (${fmtD(peak)}). Les 3 jours suivants confirment le passage en phase infertile post-ovulatoire.</div></div>`;}
+  else pc.innerHTML='';
+  const today=iso();
+  const rows=[['📅','Date'],['🎨','Sensation'],['👁','Aspect'],['🌡','Temp.'],['⭐','Sommet'],['📌','Événements']];
+  let html='<thead><tr><th class="rowlbl">Jour cycle</th>';
+  for(let i=0;i<len;i++){const ds=addD(cycleStart,i),isT=ds===today;html+=`<th class="${isT?'today-col':''}">${i+1}</th>`;}
+  html+='</tr></thead><tbody>';
+  // Date
+  html+='<tr><td class="rowlbl">📅 Date</td>';
+  for(let i=0;i<len;i++){const ds=addD(cycleStart,i);html+=`<td onclick="openDaySheet('${ds}')" style="cursor:pointer;font-size:9px;font-weight:700;color:var(--muted)">${new Date(ds).getDate()}/${new Date(ds).getMonth()+1}</td>`;}
+  html+='</tr>';
+  // Sensation
+  html+='<tr><td class="rowlbl">🎨 Sensation</td>';
+  for(let i=0;i<len;i++){const ds=addD(cycleStart,i),l=logs[ds]||{};let cell='';if(l.isPeriodStart||(dayInfo(ds)&&dayInfo(ds).phase==='menses'&&l.sens===undefined)){cell=`<div class="obs-pellet" style="background:#D55E00">R</div>`;}else if(l.sens){cell=`<div class="obs-pellet" style="background:${SENS_COLOR[l.sens]}">${SENS_CODE[l.sens]}</div>`;}html+=`<td onclick="openDaySheet('${ds}')" style="cursor:pointer">${cell}</td>`;}
+  html+='</tr>';
+  // Aspect
+  html+='<tr><td class="rowlbl">👁 Aspect</td>';
+  for(let i=0;i<len;i++){const ds=addD(cycleStart,i),l=logs[ds]||{};html+=`<td onclick="openDaySheet('${ds}')" style="cursor:pointer;font-size:8.5px;font-weight:700;color:var(--sage2)">${l.asp&&l.asp!=='Rien'?l.asp.slice(0,4):''}</td>`;}
+  html+='</tr>';
+  // Temp
+  html+='<tr><td class="rowlbl">🌡 Temp.</td>';
+  for(let i=0;i<len;i++){const ds=addD(cycleStart,i),l=logs[ds]||{};html+=`<td onclick="openDaySheet('${ds}')" style="cursor:pointer"><span class="obs-temp">${l.bbt?l.bbt:''}</span></td>`;}
+  html+='</tr>';
+  // Sommet
+  html+='<tr><td class="rowlbl">⭐ Sommet</td>';
+  for(let i=0;i<len;i++){const ds=addD(cycleStart,i);let badge='';if(peak){const pdi=Math.floor((new Date(ds)-new Date(peak))/864e5);if(pdi===0)badge='<span class="obs-peak-badge">S</span>';else if(pdi>=1&&pdi<=3)badge=`<span class="obs-peak-badge" style="background:#F6E7C9;color:#7a5a12">${pdi}</span>`;}html+=`<td>${badge}</td>`;}
+  html+='</tr>';
+  // Events
+  html+='<tr><td class="rowlbl">📌 Événem.</td>';
+  for(let i=0;i<len;i++){const ds=addD(cycleStart,i),l=logs[ds]||{};let e='';if(l.eclair)e+='⚡';if(l.union)e+='♥';html+=`<td onclick="openDaySheet('${ds}')" style="cursor:pointer;font-size:10px">${e}</td>`;}
+  html+='</tr></tbody>';
+  document.getElementById('obsTable').innerHTML=html;
+  drawTempChart(cycleStart,len,peak);
+}
+function drawTempChart(cycleStart,len,peak){
+  const W=340,H=150,padL=30,padB=20,padT=10;
+  const pts=[];for(let i=0;i<len;i++){const ds=addD(cycleStart,i),l=logs[ds];if(l&&l.bbt)pts.push({i,t:parseFloat(l.bbt)});}
+  let svg='';
+  const tMin=36.0,tMax=37.2,range=tMax-tMin;
+  const X=i=>padL+(i/(len-1))*(W-padL-8);
+  const Y=t=>padT+(1-(t-tMin)/range)*(H-padT-padB);
+  // grid lines
+  for(let t=36.2;t<=37.0;t+=0.2){const y=Y(t);svg+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-8}" y2="${y.toFixed(1)}" stroke="#E1E6DB" stroke-width="1"/><text x="2" y="${(y+3).toFixed(1)}" font-size="8" fill="#6E7A70" font-weight="700">${t.toFixed(1)}</text>`;}
+  if(peak){const pi=Math.floor((new Date(peak)-new Date(cycleStart))/864e5);if(pi>=0&&pi<len){const x=X(pi);svg+=`<line x1="${x.toFixed(1)}" y1="${padT}" x2="${x.toFixed(1)}" y2="${H-padB}" stroke="#E69F00" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${(x+2).toFixed(1)}" y="${padT+8}" font-size="8" fill="#C5832F" font-weight="800">Sommet</text>`;}}
+  if(pts.length){let path='';pts.forEach((p,k)=>{path+=(k===0?'M':'L')+X(p.i).toFixed(1)+','+Y(p.t).toFixed(1)+' ';});svg+=`<path d="${path}" fill="none" stroke="#0072B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;pts.forEach(p=>{svg+=`<circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.t).toFixed(1)}" r="3" fill="#0072B2"/>`;});}
+  else svg+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" font-size="11" fill="#6E7A70" font-weight="700">Saisissez vos températures pour voir la courbe</text>`;
+  document.getElementById('tempChart').innerHTML=svg;
+}
+function prevCycle(){obsCycleOffset--;renderObs();}
+function nextCycle(){obsCycleOffset++;renderObs();}
+
+/* ---- DAY SHEET ---- */
+function openDaySheet(ds){
+  currentDay=ds;draft={...(logs[ds]||{})};
+  const info=dayInfo(ds),ph=PH[info?info.phase:'follicular'];
+  document.getElementById('dsDate').textContent=fmtD(ds,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('dsPhase').innerHTML=`${ph.emoji} <span style="color:${ph.color};font-weight:800">${ph.label}</span>${info?` · Jour ${info.dayIn}`:''}`;
+  const pb=document.getElementById('periodBtn');
+  if(draft.isPeriodStart){pb.classList.add('on');pb.textContent='🩸 Règles confirmé — toucher pour annuler';}else{pb.classList.remove('on');pb.textContent='🩸 Début des règles';}
+  syncSeg('sensGrp','sens');syncSeg('aspGrp','asp');syncSeg('moodGrp','mood',{Difficile:'😞',Mitigé:'😐',Bien:'🙂',Super:'😊'});
+  document.getElementById('eclairBtn').className='seg-btn'+(draft.eclair?' on-p':'');
+  document.getElementById('unionBtn').className='seg-btn'+(draft.union?' on':'');
+  document.getElementById('dsBbt').value=draft.bbt||'';
+  document.getElementById('dsNote').value=draft.note||'';
+  document.getElementById('dayOverlay').classList.add('open');document.getElementById('daySheet').classList.add('open');
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(_){}
+}
+function syncSeg(grpId,field,emojiMap){document.querySelectorAll('#'+grpId+' .seg-btn').forEach(b=>{let val;if(emojiMap){val=Object.keys(emojiMap).find(k=>emojiMap[k]===b.textContent.trim());}else{val=b.textContent.trim().replace(' ✦','');}b.classList.toggle('on',draft[field]===val);});}
+function closeDaySheet(){document.getElementById('dayOverlay').classList.remove('open');document.getElementById('daySheet').classList.remove('open');currentDay=null;}
+function togglePeriod(){draft.isPeriodStart=!draft.isPeriodStart;const pb=document.getElementById('periodBtn');if(draft.isPeriodStart){pb.classList.add('on');pb.textContent='🩸 Règles confirmé — toucher pour annuler';}else{pb.classList.remove('on');pb.textContent='🩸 Début des règles';}}
+function toggleField(f){draft[f]=!draft[f];document.getElementById(f+'Btn').className='seg-btn'+(draft[f]?(f==='eclair'?' on-p':' on'):'');}
+function pick(field,val){if(draft[field]===val)draft[field]=null;else draft[field]=val;const map={sens:'sensGrp',asp:'aspGrp',mood:'moodGrp'};const emo=field==='mood'?{Difficile:'😞',Mitigé:'😐',Bien:'🙂',Super:'😊'}:null;syncSeg(map[field],field,emo);}
+function saveDayEntry(){
+  if(!currentDay)return;
+  const b=document.getElementById('dsBbt').value;if(b)draft.bbt=parseFloat(b);else delete draft.bbt;
+  const n=document.getElementById('dsNote').value.trim();if(n)draft.note=n;else delete draft.note;
+  for(const k of Object.keys(draft))if(!draft[k]&&draft[k]!==true&&draft[k]!==0)delete draft[k];
+  saveLog(currentDay,draft);
+  if(draft.isPeriodStart&&currentDay>S.lastPeriod){S.lastPeriod=currentDay;document.getElementById('iDate').value=S.lastPeriod;saveLS();}
+  closeDaySheet();drawWheel();updateKPIs();
+  if(curTab==='calendar')renderCalendar();if(curTab==='obs')renderObs();
+  toast('Enregistré ✓');
+}
+
+/* ---- PHASE SHEET ---- */
+function openPhaseSheet(phId,day){
+  const ph=PH[phId],info=INFO[phId],N=S.cycleLen,P=S.periodLen,ovDay=N-14,fStart=Math.max(P+1,ovDay-5),peakS=Math.max(fStart,ovDay-1),fEnd=Math.min(N,ovDay+1);
+  const ranges={menses:`Jours 1 à ${P}`,follicular:`Jours ${P+1} à ${fStart-1}`,fertile:`Jours ${fStart} à ${peakS-1}`,peak:`Jours ${peakS} à ${fEnd} · max`,luteal:`Jours ${fEnd+1} à ${N} · ~14 j`};
+  document.getElementById('bsIc').textContent=ph.emoji;document.getElementById('bsIc').style.background=ph.soft;
+  document.getElementById('bsTitle').textContent=info.title;document.getElementById('bsTitle').style.color=ph.color;
+  document.getElementById('bsRange').textContent=`Jour ${day} · ${ranges[phId]||''}`;
+  document.getElementById('bsBody').innerHTML=info.paras.map(p=>`<p>${p}</p>`).join('')+`<div class="bs-refine">${info.refine}</div><div class="bs-warn"><span>⚠️</span><div>Estimation indicative. Ne remplace pas un suivi médical ni une contraception.</div></div>`;
+  document.getElementById('phOverlay').classList.add('open');document.getElementById('phSheet').classList.add('open');
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(_){}
+}
+function closePhaseSheet(){document.getElementById('phOverlay').classList.remove('open');document.getElementById('phSheet').classList.remove('open');}
+
+/* ---- CONTRÔLES ---- */
+function adj(key,delta){if(key==='cycleLen')S.cycleLen=Math.max(G.minC,Math.min(G.maxC,S.cycleLen+delta));if(key==='periodLen')S.periodLen=Math.max(G.minP,Math.min(G.maxP,S.periodLen+delta));saveLS();drawWheel();updateKPIs();if(curTab==='calendar')renderCalendar();if(curTab==='obs')renderObs();}
+document.getElementById('iDate').addEventListener('change',e=>{S.lastPeriod=e.target.value;saveLS();drawWheel();updateKPIs();if(curTab==='calendar')renderCalendar();if(curTab==='obs')renderObs();});
+function switchTab(name){curTab=name;document.getElementById('view-cycle').style.display=name==='cycle'?'':'none';document.getElementById('view-calendar').style.display=name==='calendar'?'':'none';document.getElementById('view-obs').style.display=name==='obs'?'':'none';['cycle','calendar','obs'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('active',t===name));if(name==='calendar')renderCalendar();if(name==='obs'){obsCycleOffset=0;renderObs();}}
+function initDrag(){const svg=document.getElementById('wheelSvg');let dr=false,sA=0,sL=S.cycleLen;const ang=e=>{const r=svg.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,{clientX,clientY}=e.touches?e.touches[0]:e;return Math.atan2(clientY-cy,clientX-cx)*180/Math.PI;};const oS=e=>{const r=svg.getBoundingClientRect(),sc=r.width/400,{clientX,clientY}=e.touches?e.touches[0]:e,dist=Math.hypot(clientX-(r.left+r.width/2),clientY-(r.top+r.height/2));if(dist<G.rMid*sc||dist>(G.rOut+28)*sc)return;e.preventDefault();dr=true;sA=ang(e);sL=S.cycleLen;};const oM=e=>{if(!dr)return;e.preventDefault();let d=ang(e)-sA;if(d>180)d-=360;if(d<-180)d+=360;const nl=Math.max(G.minC,Math.min(G.maxC,sL+Math.round(d/(360/sL))));if(nl!==S.cycleLen){S.cycleLen=nl;drawWheel();updateKPIs();saveLS();}};const oE=()=>{dr=false;};svg.addEventListener('touchstart',oS,{passive:false});svg.addEventListener('touchmove',oM,{passive:false});svg.addEventListener('touchend',oE);svg.addEventListener('mousedown',oS);window.addEventListener('mousemove',oM);window.addEventListener('mouseup',oE);}
+function drawLegend(){document.getElementById('legend').innerHTML=Object.values(PH).map(p=>`<div class="leg-pill"><div class="leg-dot" style="background:${p.color}"></div>${p.emoji} ${p.label}</div>`).join('');}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
+
+loadLS();document.getElementById('iDate').value=S.lastPeriod;drawLegend();initDrag();drawWheel();updateKPIs();
+</script>
+</body>
+</html>
