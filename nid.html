@@ -2,16 +2,46 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
   <title>Nid — Accompagnement périnatal</title>
   <meta name="description" content="Nid · Accompagnement bienveillant de la préconception aux 2 ans de bébé"/>
   <meta name="theme-color" content="#3C5B49"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪺</text></svg>"/>
   <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.23.4/babel.min.js"></script>
   <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
   <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js"></script>
-  <style>*{box-sizing:border-box}body{margin:0;padding:0;background:#E4E8DC;-webkit-text-size-adjust:100%}</style>
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#EBEEE5;-webkit-text-size-adjust:100%;font-family:'Mulish',system-ui,sans-serif}
+  /* Stage : plein écran centré, pas de padding sur mobile */
+  .stage{
+    min-height:100dvh!important;height:100dvh!important;
+    display:flex!important;align-items:stretch!important;justify-content:center!important;
+    padding:0!important;background:#EBEEE5!important;
+  }
+  /* Device : full screen sur mobile, frame sur desktop */
+  .device{
+    border-radius:0!important;box-shadow:none!important;
+    width:100%!important;max-width:434px!important;
+    height:100dvh!important;height:100vh!important;
+  }
+  /* Sur desktop (> 434px) : remettre le frame */
+  @media(min-width:480px){
+    .stage{padding:20px!important;align-items:center!important;}
+    .device{border-radius:28px!important;height:min(95vh,900px)!important;box-shadow:0 40px 80px -30px rgba(36,48,41,.45)!important;}
+  }
+  /* Build strip juste au dessus de la tab bar */
+  .bstrip{position:fixed!important;left:0;right:0;}
+  @media(min-width:480px){.bstrip{position:absolute!important;}}
+  /* Toast au dessus du strip */
+  .toast{z-index:70!important;}
+</style>
 </head>
 <body>
   <div id="root"></div>
@@ -20,6 +50,9 @@
     const {Sparkles,Activity,Info,CalendarDays,TrendingUp,Check,ChevronRight,ChevronLeft,Heart,Settings,Leaf,Plus,Volume2,BookOpen,Home,Baby,Moon,Milk,Droplet,Scale,Stethoscope,AlertCircle,Clock,Flower2,Footprints,MessageCircle,Send,Shield,HandHeart,X,Syringe,Utensils,Ruler,BarChart3,Map}=window.lucideReact||window.LucideReact||{};
     const {LineChart,Line,AreaChart,Area,BarChart,Bar,XAxis,YAxis,ResponsiveContainer,Tooltip,ReferenceLine,ReferenceArea,Cell}=window.Recharts||{};
 
+import React,{useState,useEffect,useMemo,useCallback,useRef}from"react";
+import{Sparkles,Activity,Info,CalendarDays,TrendingUp,Check,ChevronRight,ChevronLeft,Heart,Settings,Leaf,Plus,Volume2,BookOpen,Home,Baby,Moon,Milk,Droplet,Scale,Stethoscope,AlertCircle,Clock,Flower2,Footprints,MessageCircle,Send,Shield,HandHeart,X,Syringe,Utensils,Ruler,BarChart3}from"lucide-react";
+import{LineChart,Line,AreaChart,Area,BarChart,Bar,XAxis,YAxis,ResponsiveContainer,Tooltip,ReferenceLine,ReferenceArea,Cell}from"recharts";
 
 const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Mulish:wght@600;700;800&display=swap');
