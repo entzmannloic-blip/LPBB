@@ -1,32 +1,36 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <title>Nid</title>
-  <meta name="theme-color" content="#3C5B49"/>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129530;</text></svg>"/>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;background:#EBEEE5;-webkit-text-size-adjust:100%;overflow:hidden}
-    #root{height:100%;display:flex;justify-content:center;align-items:stretch}
-    /* Device frame : plein ecran sur mobile, cadre sur desktop */
-    .stage{min-height:100dvh;display:flex;align-items:stretch;justify-content:center;background:#EBEEE5}
-    .device{width:100%;max-width:434px;border-radius:0;box-shadow:none}
-    @media(min-width:480px){
-      .stage{align-items:center;padding:20px}
-      .device{border-radius:28px!important;height:min(95vh,900px)!important;box-shadow:0 40px 80px -30px rgba(36,48,41,.45)!important}
-      .bstrip{position:absolute!important;left:0;right:0;transform:none!important}
-    }
-    /* Build strip : fixe sur mobile */
-    .bstrip{position:fixed;left:0;right:0;bottom:76px;max-width:434px;margin:0 auto}
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>Nid</title>
+<meta name="theme-color" content="#3C5B49"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129530;</text></svg>"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EBEEE5;-webkit-text-size-adjust:100%;overflow:hidden}
+#root{height:100%}
+.stage{min-height:100dvh;display:flex;align-items:stretch;justify-content:center;background:#EBEEE5}
+.device{width:100%;max-width:434px;border-radius:0;box-shadow:none}
+@media(min-width:480px){
+  .stage{align-items:center;padding:20px}
+  .device{border-radius:28px!important;height:min(95vh,900px)!important;box-shadow:0 40px 80px -30px rgba(36,48,41,.45)!important}
+  .bstrip{position:absolute!important;left:0;right:0;transform:none!important}
+}
+.bstrip{position:fixed;left:50%;transform:translateX(-50%);max-width:434px}
+#err{display:none;padding:40px 24px;font-family:system-ui;color:#243029;text-align:center}
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <script src="bundle.js"></script>
+<div id="root"></div>
+<div id="err">Chargement impossible. <a href="javascript:location.reload()">Recharger</a></div>
+<script>
+window.addEventListener('error',function(e){
+  var r=document.getElementById('root');
+  if(r && r.innerHTML.length<50){document.getElementById('err').style.display='block';}
+});
+</script>
+<script src="bundle.js"></script>
 </body>
 </html>
