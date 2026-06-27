@@ -1,34 +1,959 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>LPBB</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <title>Nid — Accompagnement périnatal</title>
+  <meta name="description" content="Nid · Accompagnement bienveillant de la préconception aux 2 ans de bébé"/>
+  <meta name="theme-color" content="#3C5B49"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪺</text></svg>"/>
+  <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.4/babel.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js"></script>
+
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:#EBEEE5;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px}
-a{display:block;background:#fff;border:1px solid #E1E6DB;border-radius:18px;padding:20px 22px;text-decoration:none;color:#243029;max-width:400px;width:100%}
-a:active{transform:scale(.98);transition:.1s}
-.ti{font-size:18px;font-weight:800;margin-bottom:5px}
-.su{font-size:13px;color:#6E7A70;line-height:1.45}
-.pl{display:inline-block;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:800;margin-top:10px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:#EBEEE5;-webkit-text-size-adjust:100%;font-family:'Mulish',system-ui,sans-serif}
+  /* Stage : plein écran centré, pas de padding sur mobile */
+  .stage{
+    min-height:100dvh!important;height:100dvh!important;
+    display:flex!important;align-items:stretch!important;justify-content:center!important;
+    padding:0!important;background:#EBEEE5!important;
+  }
+  /* Device : full screen sur mobile, frame sur desktop */
+  .device{
+    border-radius:0!important;box-shadow:none!important;
+    width:100%!important;max-width:434px!important;
+    height:100dvh!important;height:100vh!important;
+  }
+  /* Sur desktop (> 434px) : remettre le frame */
+  @media(min-width:480px){
+    .stage{padding:20px!important;align-items:center!important;}
+    .device{border-radius:28px!important;height:min(95vh,900px)!important;box-shadow:0 40px 80px -30px rgba(36,48,41,.45)!important;}
+  }
+  /* Build strip juste au dessus de la tab bar */
+  .bstrip{position:fixed!important;left:0;right:0;}
+  @media(min-width:480px){.bstrip{position:absolute!important;}}
+  /* Toast au dessus du strip */
+  .toast{z-index:70!important;}
 </style>
 </head>
 <body>
-<div style="text-align:center;margin-bottom:8px">
-  <div style="font-size:44px">&#129530;</div>
-  <div style="font-size:22px;font-weight:800;color:#243029;margin-top:6px">Mes outils</div>
-  <div style="font-size:12px;color:#6E7A70;margin-top:2px">entzmannloic-blip.github.io/LPBB</div>
-</div>
-<a href="nid.html">
-  <div class="ti">Nid &mdash; App p&eacute;rinatal</div>
-  <div class="su">Pr&eacute;conception &middot; Grossesse &middot; Post-partum &middot; B&eacute;b&eacute; 0-2 ans<br>TTS &middot; IA &middot; R&eacute;confort &middot; Rewind</div>
-  <span class="pl" style="background:#3C5B49;color:#fff">Build 003 &middot; Sprint 2</span>
-</a>
-<a href="cycle.html">
-  <div class="ti">Outil cycle symptoterm.</div>
-  <div class="su">Roue du cycle &middot; Calendrier &middot; Tableau d'observation</div>
-  <span class="pl" style="background:#557A66;color:#fff">En ligne</span>
-</a>
+  <div id="root"></div>
+  <script type="text/babel">
+    const {useState,useEffect,useMemo,useCallback,useRef}=React;
+    const {Sparkles,Activity,Info,CalendarDays,TrendingUp,Check,ChevronRight,ChevronLeft,Heart,Settings,Leaf,Plus,Volume2,BookOpen,Home,Baby,Moon,Milk,Droplet,Scale,Stethoscope,AlertCircle,Clock,Flower2,Footprints,MessageCircle,Send,Shield,HandHeart,X,Syringe,Utensils,Ruler,BarChart3,Map}=window.lucideReact||window.LucideReact||{};
+    const {LineChart,Line,AreaChart,Area,BarChart,Bar,XAxis,YAxis,ResponsiveContainer,Tooltip,ReferenceLine,ReferenceArea,Cell}=window.Recharts||{};
+
+import React,{useState,useEffect,useMemo,useCallback,useRef}from"react";
+import{Sparkles,Activity,Info,CalendarDays,TrendingUp,Check,ChevronRight,ChevronLeft,Heart,Settings,Leaf,Plus,Volume2,BookOpen,Home,Baby,Moon,Milk,Droplet,Scale,Stethoscope,AlertCircle,Clock,Flower2,Footprints,MessageCircle,Send,Shield,HandHeart,X,Syringe,Utensils,Ruler,BarChart3}from"lucide-react";
+import{LineChart,Line,AreaChart,Area,BarChart,Bar,XAxis,YAxis,ResponsiveContainer,Tooltip,ReferenceLine,ReferenceArea,Cell}from"recharts";
+
+const CSS=`
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Mulish:wght@600;700;800&display=swap');
+:root{--bg:#EBEEE5;--sf:#fff;--sf2:#F8FAF4;--ink:#243029;--mu:#6E7A70;--ln:#E1E6DB;
+  --sg:#3C5B49;--sg2:#557A66;--sgs:#DCE7DE;--hn:#DC9B4E;--hn2:#C5832F;--hns:#F6E7C9;
+  --cf:#897FA6;--cfs:#ECE7F2;--cl:#CC7355;--cls:#F7E2D8}
+.cm{--sg:#7B6FA0;--sg2:#897FA6;--sgs:#ECE7F2;--hn:#B0A4C8;--hn2:#8B7DB8;--hns:#EDE7F3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.nr{font-family:'Mulish',system-ui,sans-serif;color:var(--ink)}
+.sf{font-family:'Fraunces','Georgia',serif}
+.stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(1200px 600px at 15% -10%,#F3EFE2 0,transparent 55%),radial-gradient(900px 700px at 110% 110%,#DDE7DD 0,transparent 50%),#E4E8DC}
+.device{position:relative;width:100%;max-width:434px;height:min(95vh,960px);background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 80px -30px rgba(36,48,41,.45),0 0 0 1px rgba(36,48,41,.06)}
+.scr{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 16px 122px;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
+.fade{animation:f .4s cubic-bezier(.2,.7,.2,1)}@keyframes f{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.top{padding:22px 4px 6px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.eb{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--sg2);font-weight:800}
+.h1{font-size:25px;line-height:1.12;font-weight:600;margin:4px 0 0;letter-spacing:-.01em}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--sf);border:1px solid var(--ln);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:700;color:var(--sg);cursor:pointer;flex:none}
+.ibtn{width:38px;height:38px;border-radius:12px;background:var(--sf);border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--sg);flex:none}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:22px;padding:16px;box-shadow:0 8px 22px -18px rgba(36,48,41,.4)}
+.lbl{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--mu);font-weight:800;margin:20px 4px 10px;display:flex;align-items:center;gap:7px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--sf);border:1px solid var(--ln);border-radius:18px;padding:13px 14px}
+.k-top{display:flex;align-items:center;gap:7px;color:var(--mu);font-size:11px;font-weight:800}
+.k-val{font-family:"Fraunces",serif;font-size:22px;font-weight:700;line-height:1.1;margin-top:7px}
+.k-sub{font-size:11px;color:var(--mu);margin-top:3px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;border-radius:99px;padding:4px 9px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.opt{border:1px solid var(--ln);background:var(--sf);border-radius:12px;padding:9px 12px;font-size:13px;cursor:pointer;font-weight:700;color:var(--ink)}
+.opt.on{background:var(--sg);color:#fff;border-color:var(--sg)}.opt.on-h{background:var(--hn);color:#3a2a0c;border-color:var(--hn)}
+.btn{appearance:none;border:none;cursor:pointer;font-family:inherit;font-weight:700;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s}
+.btn:active{transform:scale(.97)}.btn-p{background:var(--sg);color:#fff;padding:14px;font-size:15px;width:100%}
+.btn-s{background:var(--sgs);color:var(--sg);padding:11px 14px;font-size:14px}
+.inp{width:100%;border:1px solid var(--ln);background:var(--sf);border-radius:13px;padding:12px 13px;font-family:inherit;font-size:15px;outline:none;color:var(--ink)}.inp:focus{border-color:var(--sg)}
+.stp{display:flex;align-items:center;background:var(--bg);border-radius:14px}
+.s-b{width:38px;height:38px;border:none;background:none;cursor:pointer;font-size:20px;font-weight:800;color:var(--sg);font-family:inherit;display:flex;align-items:center;justify-content:center;border-radius:12px}
+.s-b:active{background:var(--ln)}.s-n{min-width:44px;text-align:center;font-size:17px;font-weight:800}
+.s-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.s-row:last-child{margin-bottom:0}
+.lct{background:linear-gradient(180deg,#fff,#FBFCF7);border:1px solid var(--ln);border-radius:22px;padding:18px;position:relative;overflow:hidden}
+.lct::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--lc,#3C5B49)}
+.lct .lhead{display:flex;align-items:center;gap:9px;margin-bottom:10px}.lct .lhead .t{font-family:"Fraunces",serif;font-size:17px;font-weight:600}
+.lct p{font-size:14.5px;line-height:1.62;color:#34403a;margin:0 0 10px}
+.lbtn{display:inline-flex;align-items:center;gap:7px;background:var(--sgs);color:var(--sg);border:none;border-radius:12px;padding:9px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}.lbtn.on{background:var(--sg);color:#fff}
+.tgl{width:46px;height:28px;border-radius:99px;background:var(--ln);position:relative;cursor:pointer;flex:none;transition:background .18s}.tgl.on{background:var(--sg)}.tgl b{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:99px;background:#fff;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.tgl.on b{left:21px}
+.ov{position:absolute;inset:0;background:rgba(36,48,41,.42);backdrop-filter:blur(4px);z-index:50;display:flex;align-items:flex-end;animation:f .25s}
+.sht{background:var(--bg);width:100%;border-radius:26px 26px 0 0;padding:8px 18px 28px;max-height:88%;overflow-y:auto;animation:up .34s cubic-bezier(.2,.7,.2,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.grab{width:40px;height:4px;border-radius:99px;background:var(--ln);margin:10px auto 16px}
+.sht h2{font-family:"Fraunces",serif;font-size:21px;font-weight:700;margin:8px 0 10px}
+.bub{max-width:84%;padding:11px 14px;border-radius:18px;font-size:14.5px;line-height:1.5}
+.b-u{background:var(--sg);color:#fff;border-bottom-right-radius:5px;align-self:flex-end}
+.b-a{background:var(--sf);border:1px solid var(--ln);border-bottom-left-radius:5px;align-self:flex-start}
+.typing i{width:7px;height:7px;border-radius:99px;background:var(--sg2);opacity:.5;animation:bl 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bl{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
+.comp{display:flex;gap:8px;align-items:flex-end;padding:10px;background:var(--sf);border:1px solid var(--ln);border-radius:20px}
+.comp textarea{flex:1;border:none;resize:none;outline:none;font-family:inherit;font-size:14.5px;background:transparent;max-height:100px;line-height:1.4;color:var(--ink)}
+.sbtn{width:40px;height:40px;border-radius:14px;background:var(--sg);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}.sbtn:disabled{opacity:.4}
+.toast{position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:.3s;z-index:60;display:flex;gap:8px;align-items:center}
+.bstrip{position:absolute;left:0;right:0;bottom:76px;height:26px;background:rgba(235,238,229,.92);backdrop-filter:blur(8px);border-top:1px solid var(--ln);display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:25;pointer-events:none}
+.bstrip .bd{font-size:10px;color:var(--mu);font-weight:700;letter-spacing:.02em}
+.bstrip .bp{background:#3C5B49;color:#fff;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:800;letter-spacing:.04em;font-family:monospace}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.tbar{position:absolute;left:0;right:0;bottom:0;height:76px;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);border-top:1px solid var(--ln);display:flex;padding:8px 4px 14px;z-index:30}
+.tab{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--mu);font-size:10px;font-weight:800;font-family:inherit}
+.tab.a{color:var(--sg)}.tab .dot{width:5px;height:5px;border-radius:99px;background:transparent}.tab.a .dot{background:var(--hn)}
+.rw{border-radius:22px;overflow:hidden;color:#fff;padding:26px 20px;min-height:178px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;position:relative;user-select:none}
+.rw .rk{font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;opacity:.85}
+.rw .rb{font-family:"Fraunces",serif;font-size:40px;font-weight:700;line-height:1.04;margin:6px 0}
+.rw .rt{font-size:14px;line-height:1.5;opacity:.95}
+.rdots{display:flex;gap:6px;justify-content:center;margin-top:12px}.rdots i{width:7px;height:7px;border-radius:99px;background:var(--ln);transition:.2s}.rdots i.on{background:var(--sg);width:18px}
+.note{display:flex;gap:9px;align-items:flex-start;background:var(--hns);border:1px solid #ECD6A8;border-radius:14px;padding:11px 13px;font-size:12.5px;color:#6b4e1d;line-height:1.45}
+.safe{display:flex;gap:9px;align-items:flex-start;background:var(--cls);border:1px solid #E9C9BC;border-radius:14px;padding:11px 13px;font-size:12.5px;color:#7a3b27;line-height:1.45}
+.logrow{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.lgb{background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:13px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--ink)}
+.lgb:active{transform:scale(.96)}.lgb .c{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.chk{width:24px;height:24px;border-radius:8px;border:2px solid var(--ln);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer}.chk.on{background:var(--sg);border-color:var(--sg)}
+.item{display:flex;align-items:center;gap:13px;padding:13px;background:var(--sf);border:1px solid var(--ln);border-radius:15px;margin-bottom:9px}
+`;
+
+const PHASES={
+  preconception:{key:"preconception",label:"Préconception",short:"Projet bébé",Icon:Sparkles,color:"#7C9A86"},
+  grossesse:    {key:"grossesse",    label:"Grossesse",    short:"Grossesse",  Icon:Flower2, color:"#DC9B4E"},
+  postpartum:   {key:"postpartum",   label:"Post-partum",  short:"Post-partum",Icon:Heart,   color:"#CC7355"},
+  bebe:         {key:"bebe",         label:"Bébé 0–2 ans", short:"Bébé",       Icon:Baby,    color:"#557A66"},
+};
+const ORDER=["preconception","grossesse","postpartum","bebe"];
+const BUILD={num:"003",sprint:"Sprint 2",label:"Densité totale · TTS · IA · Réconfort · Rewind",date:"27 juin 2026",sha:"s2-bb4a",pushed:true};
+const CPH={
+  menses:    {l:"Règles",         e:"🩸",c:"#D55E00",s:"#FAEDE8"},
+  follicular:{l:"Folliculaire",   e:"💧",c:"#56B4E9",s:"#E4F3FC"},
+  fertile:   {l:"Fenêtre fertile",e:"🌿",c:"#009E73",s:"#CCF0E2"},
+  peak:      {l:"Pic d'ovulation",e:"⭐",c:"#E69F00",s:"#FEF2CC"},
+  luteal:    {l:"Phase lutéale",  e:"🌙",c:"#0072B2",s:"#CCE4F5"},
+};
+const FRUITS={6:"lentille",8:"framboise",10:"kumquat",12:"citron vert",14:"citron",16:"avocat",18:"poivron",20:"banane",22:"papaye",24:"maïs",26:"laitue",28:"aubergine",30:"courgette",32:"chou-fleur",34:"melon",36:"salade",38:"poireau",40:"pastèque"};
+function fruitFor(sa){const k=Object.keys(FRUITS).map(Number);let b=k[0];for(const x of k)if(x<=sa)b=x;return FRUITS[b];}
+const MEDW={0:3.3,1:4.5,2:5.6,3:6.4,4:7,5:7.5,6:7.9,8:8.6,10:9.2,12:9.6,15:10.3,18:10.9,21:11.5,24:12.2};
+const MWKEYS=Object.keys(MEDW).map(Number);
+function medW(m,sex){const f=sex==="f"?0.96:1;if(m<=0)return MEDW[0]*f;if(m>=24)return MEDW[24]*f;let lo=0,hi=24;for(let i=0;i<MWKEYS.length-1;i++){if(m>=MWKEYS[i]&&m<=MWKEYS[i+1]){lo=MWKEYS[i];hi=MWKEYS[i+1];break;}}const v=MEDW[lo]+(MEDW[hi]-MEDW[lo])*((m-lo)/(hi-lo));return+(v*f).toFixed(2);}
+const MILESTONES=[
+  {m:2,items:["Sourire en réponse","Suit un objet","Réagit aux sons"]},
+  {m:4,items:["Tient sa tête","Gazouille","Attrape des objets"]},
+  {m:6,items:["Se retourne","Tient assis (appui)","Babille"]},
+  {m:9,items:["Tient assis seul","Pince pouce-index","Réagit à son prénom"]},
+  {m:12,items:["Se met debout","Premiers mots","Se déplace"]},
+  {m:18,items:["Marche seul","Plusieurs mots","Pointe du doigt"]},
+  {m:24,items:["Court","2 mots associés","Monte les escaliers"]},
+];
+const VACCINS=[
+  {m:2,label:"2 mois",sub:"DTP-Coq-Hib-HépB · Pneumocoque"},
+  {m:4,label:"4 mois",sub:"DTP-Coq-Hib-HépB · Pneumocoque"},
+  {m:11,label:"11 mois",sub:"Rappel DTP · Pneumocoque"},
+  {m:12,label:"12 mois",sub:"ROR · Méningocoque C"},
+  {m:16,label:"16–18 mois",sub:"2e dose ROR"},
+];
+
+/* ── Utilitaires ─────────────────────────────────────────────── */
+const iso=()=>new Date().toISOString().slice(0,10);
+const addD=(s,n)=>{const d=new Date(s);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+function dBet(a,b){return Math.floor((new Date(b)-new Date(a))/864e5);}
+function fmt(d,o={day:"numeric",month:"short"}){return new Date(d).toLocaleDateString("fr-FR",o);}
+const isoOff=(n)=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+const sv=(k,v)=>{if(typeof window!=="undefined"&&window.storage)try{window.storage.set(k,JSON.stringify(v));}catch(e){}};
+const ld=async(k,fb)=>{try{if(typeof window!=="undefined"&&window.storage){const r=await window.storage.get(k);if(r)return JSON.parse(r.value);}}catch(e){}return fb;};
+
+/* ── Calculs ─────────────────────────────────────────────────── */
+function calcPreco({lastPeriod,cycleLen,periodLen}){
+  const N=cycleLen||28,P=periodLen||5,ovDay=N-14;
+  const fS=Math.max(P+1,ovDay-5),pk=Math.max(fS,ovDay-1),fE=Math.min(N,ovDay+1);
+  const today=new Date(),lp=new Date(lastPeriod||isoOff(-14));
+  const elapsed=Math.max(0,Math.floor((today-lp)/864e5));
+  const dayIn=elapsed%N+1;
+  const nLP=addD(lastPeriod||isoOff(-14),Math.floor(elapsed/N+1)*N);
+  const nOv=addD(nLP,-14);
+  const dToOv=Math.round((new Date(nOv)-today)/864e5);
+  const dToPer=Math.round((new Date(nLP)-today)/864e5);
+  let ph;
+  if(dayIn<=P)ph="menses";else if(dayIn<fS)ph="follicular";
+  else if(dayIn>=pk&&dayIn<=fE)ph="peak";else if(dayIn>=fS&&dayIn<pk)ph="fertile";else ph="luteal";
+  const dv=dayIn-ovDay;
+  let fPct,fLabel,fColor;
+  if(dayIn<=P){fPct=2;fLabel="Très faible";fColor=CPH.follicular.c;}
+  else if(dayIn<fS){fPct=8;fLabel="Faible";fColor=CPH.follicular.c;}
+  else if(dv<=-3){fPct=38;fLabel="Élevée";fColor=CPH.fertile.c;}
+  else if(dv>=-2&&dv<=0){fPct=94;fLabel="Maximale ⭐";fColor=CPH.peak.c;}
+  else if(dv===1){fPct=16;fLabel="Décroissante";fColor=CPH.luteal.c;}
+  else{fPct=2;fLabel="Faible";fColor=CPH.luteal.c;}
+  return{N,P,ovDay,fS,pk,fE,dayIn,dToOv,dToPer,ph,fPct,fLabel,fColor,nOv,nLP,inW:dayIn>=fS&&dayIn<=fE};
+}
+function phFor(day,c){if(day<=c.P)return"menses";if(day<c.fS)return"follicular";if(day>=c.pk&&day<=c.fE)return"peak";if(day>=c.fS&&day<c.pk)return"fertile";return"luteal";}
+function calcGross({dpa}){
+  const dt=dBet(new Date(),dpa);let sa=41-Math.round(dt/7);sa=Math.min(41,Math.max(4,sa));
+  const tri=sa<=14?1:sa<=27?2:3,col=tri===1?"#7C9A86":tri===2?"#DC9B4E":"#CC7355";
+  return{sa,tri,col,wLeft:Math.max(0,Math.round(dt/7)),pct:Math.min(100,Math.round(sa/41*100)),fruit:fruitFor(sa)};
+}
+function ageInfo(birth){
+  const days=Math.max(0,dBet(birth,new Date())),m=Math.min(24,Math.floor(days/30.44));
+  let label;if(days<14)label=`${days}j`;else if(m<1)label=`${Math.floor(days/7)} sem.`;
+  else{const w=Math.floor((days-m*30.44)/7);const ws=w>0?" "+w+"sem.":"";label=`${m} mois${ws}`;}
+  return{days,months:m,label};
+}
+function wakeWin(m){return m<1?50:m<3?75:m<5?105:m<7?135:m<9?165:m<12?210:270;}
+function ppInfo(d){const days=Math.max(0,dBet(d,new Date()));return{days,weeks:Math.floor(days/7),label:days<14?`J+${days}`:`${Math.floor(days/7)} semaines`};}
+function bbtSeed(c){const a=[];for(let d=1;d<=c.N;d++){let b=d<c.ovDay?36.45:36.80;const n=Math.sin(d*1.7)*0.04;let t=d===c.ovDay?36.40:b+n;a.push({j:d,t:+(t.toFixed(2))});}return a;}
+function nextNapStr(){const t=new Date(Date.now()+95*60000);return t.getHours().toString().padStart(2,"0")+":"+t.getMinutes().toString().padStart(2,"0");}
+
+/* ── Lectures ────────────────────────────────────────────────── */
+function lPreco(c){
+  if(c.ph==="menses")return[`Tu es à J${c.dayIn}, phase menstruelle. La fenêtre fertile s'ouvre vers J${c.fS}.`];
+  if(c.ph==="follicular")return[`J${c.dayIn}, phase folliculaire. Ovulation estimée dans ${c.dToOv} j, fenêtre fertile à partir de J${c.fS}.`];
+  if(c.ph==="peak")return[`J${c.dayIn} : pic d'ovulation estimé. Les 48 h à venir sont les plus fertiles.`];
+  if(c.ph==="fertile")return[`J${c.dayIn} : fenêtre fertile, fertilité élevée. Ovulation prévue dans ${c.dToOv}j (le ${fmt(c.nOv)}).`];
+  return[`J${c.dayIn}, phase lutéale. Prochaines règles dans ${c.dToPer} j (vers le ${fmt(c.nLP)}).`];
+}
+function lGross(g,dpa){
+  const f=g.fruit,art="aeiouéâ".includes(f[0])?"une":"un";
+  return[`${g.sa} SA — bébé a la taille d'${art} ${f}. T${g.tri}, ${g.pct}% du parcours.`,
+    `Il reste ~${g.wLeft} semaine${g.wLeft!==1?"s":""} avant le terme (${fmt(dpa)}). Écoute ton corps, et surveille les mouvements de bébé.`];
+}
+function lPP(pp,comfort){
+  if(comfort)return[`${pp.label} après l'accouchement. Chaque jour est une avancée. Prends soin de toi.`];
+  return[`${pp.label} après l'accouchement. Fatigue, émotivité et bouleversements sont normaux.`,`Prendre du temps pour toi fait partie du soin. Si le mal-être dure plus de 2 semaines, parle-en.`];
+}
+function lBebe(age,sleepMin,feeds,nap,sleeping){
+  const p=[];
+  if(age.months<4)p.push(`${age.label} : les rythmes se mettent en place. Observe ses signes de fatigue — bâillements, regard dans le vide.`);
+  else if(age.months<13)p.push(`${age.label} : il explore et babille. Le lait reste central, en complément des repas.`);
+  else p.push(`${age.label} : il marche, découvre, s'affirme. Les routines le rassurent.`);
+  const o=[];if(sleepMin>0){const h=Math.floor(sleepMin/60),m=sleepMin%60;const hStr=(h>0?h+"h":"")+" "+(m>0?m+"min":"");o.push(hStr.trim()+" de sommeil");}
+  if(feeds>0)o.push(`${feeds} repas`);if(o.length)p.push(`Aujourd'hui : ${o.join(", ")}.`);
+  p.push(sleeping?`Il dort — profite-en.`:`Prochaine sieste estimée vers ${nap}.`);
+  return p;
+}
+
+/* ── SVG roue helpers ────────────────────────────────────────── */
+const GW={cx:200,cy:200,rO:168,rM:116,rI:88,rL:144,gap:1.4};
+const wPt=(r,deg)=>{const a=(deg-90)*Math.PI/180;return{x:GW.cx+r*Math.cos(a),y:GW.cy+r*Math.sin(a)};};
+function wArc(r1,r2,a1,a2){const g=GW.gap/2,p1=wPt(r2,a1+g),p2=wPt(r2,a2-g),p3=wPt(r1,a2-g),p4=wPt(r1,a1+g),lg=(a2-a1)>180?1:0;const f=v=>v.toFixed(2);return `M${f(p1.x)},${f(p1.y)} A${r2},${r2},0,${lg},1,${f(p2.x)},${f(p2.y)} L${f(p3.x)},${f(p3.y)} A${r1},${r1},0,${lg},0,${f(p4.x)},${f(p4.y)}Z`;}
+
+/* ── TTS hook ────────────────────────────────────────────────── */
+function useSpeak(lines){
+  const [on,setOn]=useState(false);
+  const speak=useCallback(()=>{try{const s=window.speechSynthesis;if(!s)return;if(on){s.cancel();setOn(false);return;}const u=new SpeechSynthesisUtterance(lines.join(" "));u.lang="fr-FR";u.onend=()=>setOn(false);s.cancel();s.speak(u);setOn(true);}catch(e){};},[lines,on]);
+  useEffect(()=>()=>{try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){};},[]);
+  return[on,speak];
+}
+
+/* ── Composants communs ──────────────────────────────────────── */
+const KPI=({icon:Ic,label,val,sub,color})=>(
+  <div className="kpi"><div className="k-top"><Ic size={14} color={color||"var(--sg2)"}/> {label}</div>
+    <div className="k-val" style={color?{color}:null}>{val}</div>{sub&&<div className="k-sub">{sub}</div>}
+  </div>
+);
+
+function LectureCard({lines,color}){
+  const [on,speak]=useSpeak(lines);
+  return(<div className="lct" style={{"--lc":color}}>
+    <div className="lhead"><Leaf size={18} color={color}/><span className="t">Là où vous en êtes</span></div>
+    {lines.map((t,i)=><p key={i}>{t}</p>)}
+    <button className={`lbtn ${on?"on":""}`} onClick={speak}><Volume2 size={15}/>{on?"Arrêter":"Écouter"}</button>
+  </div>);
+}
+
+function Fil({phase,onPick}){
+  const idx=ORDER.indexOf(phase),W=360,H=78,pad=34,y=44;
+  const xs=ORDER.map((_,i)=>pad+i*((W-2*pad)/3));
+  const path=`M ${xs[0]} ${y} C ${xs[0]+40} ${y-26}, ${xs[1]-40} ${y+26}, ${xs[1]} ${y} S ${xs[2]-40} ${y-26}, ${xs[2]} ${y} S ${xs[3]-40} ${y+26}, ${xs[3]} ${y}`;
+  return(<svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{display:"block"}}>
+    <path d={path} fill="none" stroke="var(--ln)" strokeWidth="3" strokeLinecap="round"/>
+    <path d={path} fill="none" stroke="var(--sg)" strokeWidth="3" strokeLinecap="round" strokeDasharray="600" strokeDashoffset={600-(idx/3)*600} style={{transition:"stroke-dashoffset .6s"}}/>
+    {ORDER.map((p,i)=>{const a=i===idx,dn=i<idx,P=PHASES[p];return(<g key={p} style={{cursor:onPick?"pointer":"default"}} onClick={()=>onPick&&onPick(p)}>
+      <circle cx={xs[i]} cy={y} r={a?13:8} fill={a?"var(--sg)":dn?"var(--sgs)":"#fff"} stroke={a?"var(--sg)":"var(--ln)"} strokeWidth="2"/>
+      {a&&<circle cx={xs[i]} cy={y} r={19} fill="none" stroke="var(--hn)" strokeWidth="2" opacity=".5"/>}
+      <text x={xs[i]} y={H-6} textAnchor="middle" fontFamily="Mulish" fontSize="10.5" fontWeight={a?700:600} fill={a?"var(--ink)":"var(--mu)"}>{P.short}</text>
+    </g>);})}
+  </svg>);
+}
+
+function RewindCards({cards}){
+  const [idx,setIdx]=useState(0);
+  const next=()=>setIdx(i=>(i+1)%cards.length);
+  const prev=e=>{e.stopPropagation();setIdx(i=>(i-1+cards.length)%cards.length);};
+  return(<>
+    <div className="rw" style={{background:cards[idx].bg}} onClick={next}>
+      <div><div className="rk">{cards[idx].k}</div><div className="rb">{cards[idx].big}</div><div className="rt">{cards[idx].tx}</div></div>
+      <div style={{position:"absolute",top:14,right:16,display:"flex",gap:8,alignItems:"center",fontSize:11,opacity:.8,fontWeight:700}}>
+        <span style={{cursor:"pointer"}} onClick={prev}>‹</span>{idx+1}/{cards.length}<span style={{cursor:"pointer"}} onClick={next}>›</span>
+      </div>
+    </div>
+    <div className="rdots">{cards.map((_,i)=><i key={i} className={i===idx?"on":""}/>)}</div>
+  </>);
+}
+
+function PhaseSheet({phId,day,c,onClose}){
+  if(!phId)return null;const ph=CPH[phId];
+  const TEXTS={
+    menses:["J1 = début des règles. La muqueuse utérine est éliminée suite à la chute hormonale. Durée : 3 à 7 j.","Fatigue et crampes normales. C'est le bon moment pour commencer les folates."],
+    follicular:["La FSH stimule un follicule dominant qui produit des œstrogènes. Phase élastique — varie selon les personnes.","Énergie souvent plus haute, glaire qui se fluidifie progressivement."],
+    fertile:["Les spermatozoïdes survivent jusqu'à 5 j dans le col. Un rapport dans cette fenêtre peut mener à une fécondation.","La glaire est filante, abondante, claire (type blanc d'œuf)."],
+    peak:["Pic de LH → libération de l'ovule (12–24 h de survie). Fertilité maximale.","La température basale monte de 0,3–0,5°C après l'ovulation : le plateau la confirme a posteriori."],
+    luteal:["Le corps jaune sécrète la progestérone. Durée constante ~14 j.","Si pas de grossesse, chute hormonale → règles. Syndrome prémenstruel possible."],
+  };
+  return(<div className="ov" onClick={onClose}><div className="sht" onClick={e=>e.stopPropagation()}>
+    <div className="grab"/>
+    <div style={{fontSize:40,marginBottom:8}}>{ph.e}</div>
+    <h2 style={{color:ph.c}}>{ph.l}</h2>
+    <div style={{fontSize:12.5,color:"var(--mu)",fontWeight:700,marginBottom:12}}>Jour {day}</div>
+    {(TEXTS[phId]||[]).map((t,i)=><p key={i} style={{fontSize:14.5,lineHeight:1.65,color:"#2e3d34",marginBottom:10}}>{t}</p>)}
+    <div className="note" style={{marginTop:8}}><Info size={16} style={{flex:"none",marginTop:1}}/><span>Estimation indicative. Ne remplace pas un suivi médical ni une contraception.</span></div>
+    <button className="btn btn-p" style={{marginTop:16}} onClick={onClose}>Fermer</button>
+  </div></div>);
+}
+
+function CycleWheel({cycleLen,periodLen,lastPeriod,onChange,onTap}){
+  const svgRef=useRef(null);
+  const live=useRef({cycleLen,onChange});live.current.cycleLen=cycleLen;live.current.onChange=onChange;
+  useEffect(()=>{
+    const svg=svgRef.current;if(!svg)return;let dr=false,sA=0,sL=cycleLen;
+    const ang=e=>{const r=svg.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,{clientX,clientY}=e.touches?e.touches[0]:e;return Math.atan2(clientY-cy,clientX-cx)*180/Math.PI;};
+    const oS=e=>{const r=svg.getBoundingClientRect(),sc=r.width/400,{clientX,clientY}=e.touches?e.touches[0]:e,dist=Math.hypot(clientX-(r.left+r.width/2),clientY-(r.top+r.height/2));if(dist<GW.rM*sc||dist>(GW.rO+28)*sc)return;e.preventDefault();dr=true;sA=ang(e);sL=live.current.cycleLen;};
+    const oM=e=>{if(!dr)return;e.preventDefault();let d=ang(e)-sA;if(d>180)d-=360;if(d<-180)d+=360;const nl=Math.max(21,Math.min(40,sL+Math.round(d/(360/sL))));if(nl!==live.current.cycleLen)live.current.onChange(nl);};
+    const oE=()=>{dr=false;};
+    svg.addEventListener("touchstart",oS,{passive:false});svg.addEventListener("touchmove",oM,{passive:false});svg.addEventListener("touchend",oE);
+    svg.addEventListener("mousedown",oS);window.addEventListener("mousemove",oM);window.addEventListener("mouseup",oE);
+    return()=>{svg.removeEventListener("touchstart",oS);svg.removeEventListener("touchmove",oM);svg.removeEventListener("touchend",oE);svg.removeEventListener("mousedown",oS);window.removeEventListener("mousemove",oM);window.removeEventListener("mouseup",oE);};
+  },[]);
+  const c=useMemo(()=>calcPreco({lastPeriod,cycleLen,periodLen}),[lastPeriod,cycleLen,periodLen]);
+  const step=360/cycleLen,fs=cycleLen<=28?10:9,Ph=CPH[c.ph];
+  const segs=useMemo(()=>Array.from({length:cycleLen},(_,i)=>{const day=i+1,ph=phFor(day,c);return{day,a1:i*step,a2:(i+1)*step,ph,td:day===c.dayIn};}),[cycleLen,c,step]);
+  const mPt=useMemo(()=>wPt(GW.rO+20,(c.dayIn-.5)*step),[c.dayIn,step]);
+  const ovPt=useMemo(()=>wPt(GW.rO+14,(c.ovDay-.5)*step),[c.ovDay,step]);
+  const f=v=>v.toFixed(2);
+  const mPts=`${f(mPt.x)},${f(mPt.y)} ${f(wPt(GW.rO+11,(c.dayIn-.5)*step-.035).x)},${f(wPt(GW.rO+11,(c.dayIn-.5)*step-.035).y)} ${f(wPt(GW.rO+11,(c.dayIn-.5)*step+.035).x)},${f(wPt(GW.rO+11,(c.dayIn-.5)*step+.035).y)}`;
+  return(<svg ref={svgRef} viewBox="0 0 400 400" style={{width:"100%",display:"block",touchAction:"none",userSelect:"none"}}>
+    <defs><filter id="cws"><feDropShadow dx="0" dy="4" stdDeviation="10" floodColor="#1C2820" floodOpacity=".18"/></filter></defs>
+    <circle cx={GW.cx} cy={GW.cy} r={GW.rO+6} fill="rgba(235,238,229,.55)"/>
+    {segs.filter(s=>s.day>=c.fS&&s.day<=c.fE).map(s=><path key={`g${s.day}`} d={wArc(GW.rM-4,GW.rO+10,s.a1,s.a2)} fill={CPH[s.ph].c} fillOpacity=".18" style={{pointerEvents:"none"}}/>)}
+    {segs.map(s=><path key={s.day} d={wArc(GW.rM,GW.rO,s.a1,s.a2)} fill={CPH[s.ph].c} fillOpacity={s.td?1:.78} stroke={s.td?"#fff":"none"} strokeWidth={s.td?2.5:0} style={{cursor:"pointer"}} onClick={()=>onTap(s.ph,s.day)}/>)}
+    {segs.map(s=>{const pos=wPt(GW.rL,(s.day-.5)*step);return(<text key={`n${s.day}`} x={f(pos.x)} y={f(pos.y)} textAnchor="middle" dominantBaseline="middle" fill={s.td?"#fff":"rgba(255,255,255,.88)"} fontSize={s.td?fs+2:fs} fontWeight={s.td?800:700} fontFamily="Mulish,-apple-system,sans-serif" style={{pointerEvents:"none"}}>{s.day}</text>);})}
+    <circle cx={GW.cx} cy={GW.cy} r={GW.rI} fill="white" filter="url(#cws)"/>
+    <text x={GW.cx} y={GW.cy-32} textAnchor="middle" fontSize="22" style={{pointerEvents:"none"}}>{Ph.e}</text>
+    <text x={GW.cx} y={GW.cy+8} textAnchor="middle" dominantBaseline="middle" fill={Ph.c} fontFamily="Fraunces,serif" fontSize="32" fontWeight="700" style={{pointerEvents:"none"}}>J{c.dayIn}</text>
+    <text x={GW.cx} y={GW.cy+27} textAnchor="middle" dominantBaseline="middle" fill="#6E7A70" fontSize="10" fontWeight="800" style={{letterSpacing:".08em",pointerEvents:"none"}}>{Ph.l.toUpperCase()}</text>
+    <text x={GW.cx} y={GW.cy+44} textAnchor="middle" dominantBaseline="middle" fill="#3C5B49" fontSize="10" fontWeight="700" style={{pointerEvents:"none"}}>{cycleLen}j · glisser le bord</text>
+    <polygon points={mPts} fill="#1C2820" style={{pointerEvents:"none"}}/>
+    <text x={f(ovPt.x)} y={f(ovPt.y)} textAnchor="middle" dominantBaseline="middle" fontSize="13" style={{pointerEvents:"none"}}>⭐</text>
+  </svg>);
+}
+
+/* ── DashPreco ───────────────────────────────────────────────── */
+function DashPreco({profile,setProfile,onTap,flash}){
+  const cL=profile.cycleLen||28,pL=profile.periodLen||5;
+  const c=useMemo(()=>calcPreco({lastPeriod:profile.lastPeriod,cycleLen:cL,periodLen:pL}),[profile.lastPeriod,cL,pL]);
+  const lines=useMemo(()=>lPreco(c),[c]);
+  const bbt=useMemo(()=>bbtSeed(c),[c]);
+  const hist=useMemo(()=>[27,29,28,30,27,28].map((h,i)=>({n:`C${i+1}`,len:h})).concat([{n:"Act.",len:cL}]),[cL]);
+  const [log,setLog]=useState({sens:null,asp:null,bbt:"",lh:null,sym:[]});
+  const setSens=v=>setLog(d=>({...d,sens:d.sens===v?null:v}));
+  const setAsp=v=>setLog(d=>({...d,asp:d.asp===v?null:v}));
+  const setLh=v=>setLog(d=>({...d,lh:d.lh===v?null:v}));
+  const setSym=v=>setLog(d=>({...d,sym:d.sym.includes(v)?d.sym.filter(x=>x!==v):[...d.sym,v]}));
+  const rew=[
+    {bg:"linear-gradient(160deg,#3C5B49,#243029)",k:"VOTRE CYCLE",big:`J${c.dayIn}`,tx:`${CPH[c.ph].l} · cycle de ${cL}j`},
+    {bg:"linear-gradient(160deg,#E69F00,#7a4e00)",k:"OVULATION",big:c.dToOv===0?"Aujourd'hui":c.dToOv>0?`J−${c.dToOv}`:`+${Math.abs(c.dToOv)}j`,tx:`Estimée le ${fmt(c.nOv)}`},
+    {bg:"linear-gradient(160deg,#009E73,#004d39)",k:"FENÊTRE FERTILE",big:`J${c.fS}–J${c.fE}`,tx:`Fertilité ${c.fLabel.toLowerCase()}`},
+    {bg:"linear-gradient(160deg,#0072B2,#002840)",k:"PROCHAINES RÈGLES",big:`${c.dToPer}j`,tx:`Vers le ${fmt(c.nLP)}`},
+    {bg:"linear-gradient(160deg,#3C5B49,#0f1a14)",k:"LE MOT DE NID",big:"🌿",tx:"Observer son corps, c'est se faire confiance."},
+  ];
+  return(<>
+    <div style={{marginTop:6,touchAction:"none"}}>
+      <CycleWheel cycleLen={cL} periodLen={pL} lastPeriod={profile.lastPeriod||isoOff(-14)} onChange={n=>setProfile(p=>({...p,cycleLen:n}))} onTap={onTap}/>
+    </div>
+    <p style={{textAlign:"center",fontSize:11.5,color:"var(--mu)",fontWeight:700,margin:"4px 0 0"}}>Glisser le bord · Toucher une zone pour l'expliquer</p>
+    <div style={{display:"flex",flexWrap:"wrap",gap:6,margin:"10px 0 0"}}>
+      {Object.values(CPH).map(ph=>(<div key={ph.l} style={{display:"flex",alignItems:"center",gap:5,background:"var(--sf)",border:"1px solid var(--ln)",borderRadius:999,padding:"5px 10px",fontSize:11,fontWeight:700}}>
+        <div style={{width:9,height:9,borderRadius:3,background:ph.c,flexShrink:0}}/>{ph.e} {ph.l}
+      </div>))}
+    </div>
+    <div className="card" style={{marginTop:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <span style={{fontSize:13,fontWeight:700,color:"var(--mu)"}}>Probabilité de conception</span>
+        <span style={{fontSize:14,fontWeight:800,color:c.fColor}}>{c.fLabel}</span>
+      </div>
+      <div style={{height:10,borderRadius:99,background:"var(--ln)",overflow:"hidden"}}>
+        <div style={{height:"100%",width:c.fPct+"%",background:c.fColor,borderRadius:99,transition:"width .5s"}}/>
+      </div>
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
+    <LectureCard lines={lines} color="#7C9A86"/>
+    <div className="lbl"><TrendingUp size={14}/> Indicateurs</div>
+    <div className="kpis">
+      <KPI icon={Activity} label="Phase" val={CPH[c.ph].l} color={CPH[c.ph].c}/>
+      <KPI icon={Sparkles} label="Ovulation" val={c.dToOv===0?"Auj.":c.dToOv>0?`J−${c.dToOv}`:`+${Math.abs(c.dToOv)}j`} sub={fmt(c.nOv)} color="var(--hn2)"/>
+      <KPI icon={Heart} label="Fen. fertile" val={`J${c.fS}–J${c.fE}`} color="var(--cl)"/>
+      <KPI icon={Droplet} label="Proch. règles" val={`${c.dToPer}j`} sub={fmt(c.nLP)}/>
+    </div>
+    <div className="lbl"><Activity size={14}/> Courbe de température</div>
+    <div className="card"><div style={{height:130}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={bbt} margin={{top:8,right:6,left:-18,bottom:0}}>
+          <ReferenceArea x1={c.fS} x2={c.fE} fill="#E69F00" fillOpacity={.08}/>
+          <ReferenceLine x={c.ovDay} stroke="#E69F00" strokeDasharray="4 4" strokeWidth={1.5}/>
+          <XAxis dataKey="j" tick={{fontSize:10,fill:"#6E7A70"}} axisLine={false} tickLine={false} interval={3}/>
+          <YAxis domain={[36.2,37.1]} tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={34} tickFormatter={v=>v.toFixed(1)}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--ln)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[`${v}°C`,"Temp."]} labelFormatter={l=>`Jour ${l}`}/>
+          <Line type="monotone" dataKey="t" stroke="#3C5B49" strokeWidth={2.5} dot={false}/>
+        </LineChart>
+      </ResponsiveContainer>
+    </div><p style={{fontSize:11.5,color:"var(--mu)",textAlign:"center",marginTop:4}}>Courbe indicative — le plateau post-ovulation la confirme a posteriori.</p></div>
+    <div className="lbl"><CalendarDays size={14}/> Régularité des cycles</div>
+    <div className="card"><div style={{height:110}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={hist} margin={{top:6,right:6,left:-22,bottom:0}}>
+          <XAxis dataKey="n" tick={{fontSize:10,fill:"#6E7A70"}} axisLine={false} tickLine={false}/>
+          <YAxis domain={[20,36]} tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={28}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--ln)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[`${v}j`,"Durée"]} labelStyle={{display:"none"}}/>
+          <Bar dataKey="len" radius={[6,6,0,0]}>{hist.map((d,i)=><Cell key={i} fill={d.n==="Act."?"#DC9B4E":"#7C9A86"}/>)}</Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div></div>
+    <div className="lbl"><Plus size={14}/> Observer aujourd'hui</div>
+    <div className="card">
+      <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>💧 Glaire (S/H/M/G)</div>
+      <div className="seg">{["Sèche","Humide","Mouillée","Glissante ✦"].map(s=>(<div key={s} className={`opt ${log.sens===s?"on-h":""}`} onClick={()=>setSens(s)}>{s}</div>))}</div>
+      <div style={{fontSize:13,fontWeight:700,margin:"14px 0 8px"}}>Aspect</div>
+      <div className="seg">{["Rien","Crémeux","Filant","Élastique"].map(s=>(<div key={s} className={`opt ${log.asp===s?"on":""}`} onClick={()=>setAsp(s)}>{s}</div>))}</div>
+      <div style={{fontSize:13,fontWeight:700,margin:"14px 0 8px"}}>Test LH</div>
+      <div className="seg">{["Négatif","Positif ⭐","Non testé"].map(s=>(<div key={s} className={`opt ${log.lh===s?(s.startsWith("Positif")?"on-h":"on"):""}`} onClick={()=>setLh(s)}>{s}</div>))}</div>
+      <div style={{fontSize:13,fontWeight:700,margin:"14px 0 8px"}}>🌡 Température au lever (°C)</div>
+      <input className="inp" inputMode="decimal" placeholder="ex. 36.55" value={log.bbt} onChange={e=>setLog(d=>({...d,bbt:e.target.value}))}/>
+      <div style={{fontSize:13,fontWeight:700,margin:"14px 0 8px"}}>Ressentis</div>
+      <div className="seg">{["Énergie ↑","Fatigue","Douleurs","Libido ↑","Ballonnements"].map(s=>(<div key={s} className={`opt ${log.sym.includes(s)?"on":""}`} onClick={()=>setSym(s)}>{s}</div>))}</div>
+      <button className="btn btn-p" style={{marginTop:14}} onClick={()=>flash("Journée enregistrée ✓")}>Enregistrer</button>
+    </div>
+    <div className="lbl"><Settings size={14}/> Paramètres du cycle</div>
+    <div className="card">
+      <div className="s-row">
+        <div><div style={{fontSize:14,fontWeight:700}}>1ᵉʳ jour des dernières règles</div></div>
+        <input type="date" style={{border:"1px solid var(--ln)",background:"var(--bg)",borderRadius:12,padding:"8px 10px",fontSize:14,fontWeight:700,fontFamily:"inherit",color:"var(--ink)",outline:"none"}} value={profile.lastPeriod||isoOff(-14)} onChange={e=>setProfile(p=>({...p,lastPeriod:e.target.value}))}/>
+      </div>
+      <div className="s-row">
+        <div><div style={{fontSize:14,fontWeight:700}}>Durée du cycle</div><div style={{fontSize:11.5,color:"var(--mu)"}}>Lutéale ≈ 14j · fixe</div></div>
+        <div className="stp"><button className="s-b" onClick={()=>setProfile(p=>({...p,cycleLen:Math.max(21,(p.cycleLen||28)-1)}))}>−</button><div className="s-n">{cL}</div><button className="s-b" onClick={()=>setProfile(p=>({...p,cycleLen:Math.min(40,(p.cycleLen||28)+1)}))}>+</button></div>
+      </div>
+      <div className="s-row">
+        <div><div style={{fontSize:14,fontWeight:700}}>Durée des règles</div></div>
+        <div className="stp"><button className="s-b" onClick={()=>setProfile(p=>({...p,periodLen:Math.max(2,(p.periodLen||5)-1)}))}>−</button><div className="s-n">{pL}</div><button className="s-b" onClick={()=>setProfile(p=>({...p,periodLen:Math.min(10,(p.periodLen||5)+1)}))}>+</button></div>
+      </div>
+    </div>
+    <div className="lbl"><BarChart3 size={14}/> Bilan</div>
+    <RewindCards cards={rew}/>
+    <div className="note" style={{marginTop:14}}><Info size={16} style={{flex:"none"}}/><span>Estimations calendaires indicatives. Ne remplace pas un suivi médical ni une contraception. En cas de difficulté à concevoir (12 mois, 6 après 35 ans) : consultez un professionnel.</span></div>
+  </>);
+}
+
+/* ── DashGross ───────────────────────────────────────────────── */
+function DashGross({profile,flash}){
+  const g=useMemo(()=>calcGross(profile),[profile]);
+  const lines=useMemo(()=>lGross(g,profile.dpa),[g,profile]);
+  const [kick,setKick]=useState(0);
+  const [weight,setWeight]=useState([]);
+  const WINFO={8:"Organes vitaux en formation.",12:"Fin T1 — nausées s'atténuent.",14:"T2 commence, énergie en retour.",18:"Écho morphologique bientôt.",20:"Mi-chemin ! Écho morpho.",24:"Test diabète gestationnel.",28:"T3 — repos et surveillance des mouvements.",32:"Écho T3.",36:"Valise maternité.",40:"Terme !"};
+  const wk=Object.keys(WINFO).map(Number).filter(k=>k<=g.sa).pop();
+  const MLST=[{sa:12,l:"Écho T1"},{sa:14,l:"Déclaration < 14 SA"},{sa:22,l:"Écho morpho"},{sa:26,l:"Test diabète"},{sa:32,l:"Écho T3"},{sa:34,l:"Valise maternité"},{sa:41,l:"Terme"}];
+  const nextM=MLST.find(m=>m.sa>=g.sa);
+  const wData=useMemo(()=>{const a=[];for(let i=1;i<=g.sa;i++){const pb=i*70+600+Math.sin(i)*80,pp=profile.name?null:null;a.push({sa:i,pb:+pb.toFixed(0)});}return a;},[g.sa]);
+  const rew=[
+    {bg:`linear-gradient(160deg,${g.col},#1a2a20)`,k:"GROSSESSE",big:`${g.sa} SA`,tx:`T${g.tri} · ${g.pct}%`},
+    {bg:"linear-gradient(160deg,#DC9B4E,#7a4e15)",k:"BÉBÉ",big:g.fruit,tx:`${g.wLeft} semaines avant le terme`},
+    {bg:"linear-gradient(160deg,#CC7355,#5e2c1c)",k:"PROCHAIN JALON",big:nextM?`${nextM.sa} SA`:"🎉",tx:nextM?.l||"Terme bientôt !"},
+    {bg:"linear-gradient(160deg,#3C5B49,#0f1a14)",k:"LE MOT DE NID",big:"🌿",tx:"Chaque semaine te rapproche de la rencontre."},
+  ];
+  return(<>
+    <div className="card" style={{marginTop:6}}>
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <div style={{width:64,height:64,borderRadius:18,background:g.col+"22",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:"none"}}>
+          <div style={{fontFamily:"Fraunces,serif",fontSize:24,fontWeight:700,color:g.col,lineHeight:1}}>{g.sa}</div><div style={{fontSize:10,fontWeight:800,color:g.col}}>SA</div>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:15}}>{"aeiouéâ".includes(g.fruit[0])?"une":"un"} {g.fruit}</div>
+          <div style={{fontSize:12.5,color:"var(--mu)"}}>T{g.tri} · {g.pct}%</div>
+        </div>
+      </div>
+      <div style={{height:8,background:"var(--ln)",borderRadius:99,marginTop:14,overflow:"hidden"}}><div style={{height:"100%",width:`${g.pct}%`,background:g.col,borderRadius:99}}/></div>
+      <div style={{fontSize:11.5,color:"var(--mu)",marginTop:8,textAlign:"center"}}>{g.wLeft>0?`~${g.wLeft} sem. · terme le ${fmt(profile.dpa)}`:"Terme atteint 🎉"}</div>
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture de la semaine</div>
+    <LectureCard lines={lines} color={g.col}/>
+    <div className="lbl"><TrendingUp size={14}/> Indicateurs</div>
+    <div className="kpis">
+      <KPI icon={CalendarDays} label="Semaine" val={`${g.sa} SA`} color={g.col}/>
+      <KPI icon={Activity} label="Trimestre" val={`T${g.tri}`}/>
+      <KPI icon={Baby} label="Avant terme" val={`${g.wLeft} sem.`} sub={fmt(profile.dpa)} color="var(--cl)"/>
+      <KPI icon={Stethoscope} label="Prochain jalon" val={nextM?`${nextM.sa} SA`:"🎉"} sub={nextM?.l}/>
+    </div>
+    {wk&&<><div className="lbl"><BookOpen size={14}/> Cette semaine</div>
+    <div className="card"><p style={{fontSize:14.5,lineHeight:1.65,color:"#34403a",margin:0}}>{WINFO[wk]}</p></div></>}
+    <div className="lbl"><Heart size={14}/> Compteur de mouvements</div>
+    <div className="card" style={{textAlign:"center"}}>
+      <div style={{fontFamily:"Fraunces,serif",fontSize:56,fontWeight:700,color:g.col,lineHeight:1}}>{kick}</div>
+      <div style={{fontSize:13,color:"var(--mu)",margin:"4px 0 16px"}}>mouvements comptés</div>
+      <div style={{display:"flex",gap:12,justifyContent:"center"}}>
+        <button className="btn btn-p" style={{width:120}} onClick={()=>setKick(k=>k+1)}>+1 mouvement</button>
+        <button className="btn btn-s" onClick={()=>setKick(0)}>Réinitialiser</button>
+      </div>
+      <p style={{fontSize:12,color:"var(--mu)",marginTop:12}}>À partir de 28 SA : comptez au moins 10 mouvements en 2 h. Si moins, appelez la maternité.</p>
+    </div>
+    <div className="lbl"><Scale size={14}/> Courbe de poids indicative (g)</div>
+    <div className="card"><div style={{height:130}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={wData} margin={{top:8,right:6,left:-8,bottom:0}}>
+          <XAxis dataKey="sa" tick={{fontSize:10,fill:"#6E7A70"}} axisLine={false} tickLine={false} interval={3}/>
+          <YAxis tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={40}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--ln)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[`${v}g`,"Poids bébé"]} labelFormatter={l=>`SA ${l}`}/>
+          <Line type="monotone" dataKey="pb" stroke={g.col} strokeWidth={2.5} dot={false}/>
+        </LineChart>
+      </ResponsiveContainer>
+    </div><p style={{fontSize:11.5,color:"var(--mu)",textAlign:"center",marginTop:4}}>Courbe de poids indicative (OMS médianes). Validez avec votre professionnel.</p></div>
+    <div className="lbl"><BarChart3 size={14}/> Bilan</div>
+    <RewindCards cards={rew}/>
+    <div className="safe" style={{marginTop:14}}><AlertCircle size={16} style={{flex:"none"}}/><span>Saignements, douleurs intenses, fièvre, baisse des mouvements de bébé → contactez sans attendre la maternité, votre sage-femme ou le 15.</span></div>
+  </>);
+}
+
+/* ── DashPP ──────────────────────────────────────────────────── */
+function DashPP({profile,comfort,flash}){
+  const pp=useMemo(()=>ppInfo(profile.birthDate||isoOff(-30)),[profile.birthDate]);
+  const lines=useMemo(()=>lPP(pp,comfort),[pp,comfort]);
+  const [mood,setMood]=useState(null);
+  const [wq,setWq]=useState([null,null,null]);
+  const [trend,setTrend]=useState([3,2,3,4,3,2,3]);
+  const MOODS=[["😟","Difficile"],["😐","Mitigé"],["🙂","Ça va"],["😊","Bien"]];
+  const WQS=["Comment se passe l'allaitement / le nourrissage ?","Comment dormez-vous entre les tétées ?","Avez-vous un moment pour vous aujourd'hui ?"];
+  const WQREP=[["Difficile","Compliqué","Ça va","Bien"],["Très peu","2–3h","4–5h","Plus de 5h"],["Non","Un peu","Oui, 30 min","Oui, plus"]];
+  const tData=trend.map((v,i)=>({j:["L","M","M","J","V","S","D"][i],v}));
+  const rew=[
+    {bg:`linear-gradient(160deg,#CC7355,#5e2c1c)`,k:"PARCOURS",big:pp.label,tx:`${pp.weeks} semaines après l'accouchement`},
+    {bg:"linear-gradient(160deg,#897FA6,#3a3254)",k:"HUMEUR DU JOUR",big:mood?MOODS.find(m=>m[1]===mood)?.[0]||"🙂":"—",tx:mood||"À enregistrer"},
+    {bg:"linear-gradient(160deg,#3C5B49,#0f1a14)",k:"LE MOT DE NID",big:"🌿",tx:comfort?"Chaque jour compte. Prends soin de toi.":"Tu fais du bon travail — un jour à la fois."},
+  ];
+  return(<>
+    <div className="card" style={{marginTop:6}}>
+      <div style={{fontFamily:"Fraunces,serif",fontSize:28,fontWeight:600,color:"var(--cl)"}}>{pp.label}</div>
+      <div style={{fontSize:13,color:"var(--mu)",marginTop:4}}>après l'accouchement</div>
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
+    <LectureCard lines={lines} color="#CC7355"/>
+    <div className="lbl"><Heart size={14}/> Votre humeur</div>
+    <div className="card">
+      <p style={{fontSize:13,color:"var(--mu)",margin:"0 0 12px"}}>Sans jugement — juste pour vous.</p>
+      <div style={{display:"flex",gap:8}}>
+        {MOODS.map(([e,l])=>(<button key={l} onClick={()=>{setMood(l);setTrend(t=>{const n=[...t.slice(1),MOODS.indexOf([e,l])+1];return n;});flash(`Humeur enregistrée`);}}
+          style={{flex:1,background:mood===l?"var(--cf)":"var(--sf)",border:`1px solid ${mood===l?"var(--cf)":"var(--ln)"}`,borderRadius:14,padding:"12px 4px",cursor:"pointer",color:mood===l?"#fff":"var(--ink)",textAlign:"center"}}>
+          <div style={{fontSize:26}}>{e}</div><div style={{fontSize:11,marginTop:4,fontWeight:700}}>{l}</div>
+        </button>))}
+      </div>
+    </div>
+    <div className="lbl"><TrendingUp size={14}/> Humeur de la semaine</div>
+    <div className="card"><div style={{height:110}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={tData} margin={{top:8,right:6,left:-28,bottom:0}}>
+          <defs><linearGradient id="ppg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#897FA6" stopOpacity={.35}/><stop offset="100%" stopColor="#897FA6" stopOpacity={.02}/></linearGradient></defs>
+          <XAxis dataKey="j" tick={{fontSize:11,fill:"#6E7A70"}} axisLine={false} tickLine={false}/>
+          <YAxis domain={[0,4]} tick={false} axisLine={false} tickLine={false} width={24}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--ln)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[["😟","😐","🙂","😊"][v-1]||"—","Humeur"]} labelStyle={{display:"none"}}/>
+          <Area type="monotone" dataKey="v" stroke="#897FA6" strokeWidth={2.5} fill="url(#ppg)"/>
+        </AreaChart>
+      </ResponsiveContainer>
+    </div></div>
+    <div className="lbl"><Activity size={14}/> Questions de bien-être</div>
+    <div className="card">
+      {WQS.map((q,qi)=>(<div key={qi} style={{marginBottom:qi<WQS.length-1?18:0}}>
+        <div style={{fontSize:13.5,fontWeight:700,marginBottom:8}}>{q}</div>
+        <div className="seg">{WQREP[qi].map(r=>(<div key={r} className={`opt ${wq[qi]===r?"on":""}`} onClick={()=>setWq(w=>{const n=[...w];n[qi]=r;return n;})}>{r}</div>))}</div>
+      </div>))}
+      <button className="btn btn-p" style={{marginTop:14}} onClick={()=>flash("Bien-être enregistré ✓")}>Enregistrer</button>
+    </div>
+    <div className="lbl"><Milk size={14}/> Repères du nourrissage</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      {[["Tétée / Biberon","🍼","var(--sgs)","var(--sg)"],["Couche","💧","var(--hns)","var(--hn2)"]].map(([l,e,bg,col])=>(<div key={l} style={{background:bg,border:"1px solid var(--ln)",borderRadius:18,padding:14,cursor:"pointer",textAlign:"center"}} onClick={()=>flash(`${l} noté`)}>
+        <div style={{fontSize:28,marginBottom:4}}>{e}</div><div style={{fontSize:13,fontWeight:700,color:col}}>{l}</div>
+      </div>))}
+    </div>
+    <div className="lbl"><BarChart3 size={14}/> Bilan</div>
+    <RewindCards cards={rew}/>
+    <div className="safe" style={{marginTop:14}}><AlertCircle size={16} style={{flex:"none"}}/><span>Si la tristesse s'installe plus de 2 semaines, ou en cas de pensées sombres : vous n'êtes pas seule. En urgence : 3114 (souffrance psychique) ou le 15.</span></div>
+  </>);
+}
+
+/* ── DashBebe ────────────────────────────────────────────────── */
+function DashBebe({profile,logs,addLog,comfort,flash}){
+  const age=useMemo(()=>ageInfo(profile.babyBirth||isoOff(-120)),[profile.babyBirth]);
+  const [sleeping,setSleeping]=useState(false);
+  const [sleepStart,setSleepStart]=useState(null);
+  const [omsM,setOmsM]=useState("poids");
+  const [checks,setChecks]=useState({});
+  const nap=nextNapStr();
+  const wakeW=wakeWin(age.months);
+  const sleepMin=useMemo(()=>logs.filter(l=>l.type==="sommeil").reduce((a,l)=>a+(l.dur||45),0),[logs]);
+  const feeds=logs.filter(l=>l.type==="repas").length;
+  const lines=useMemo(()=>lBebe(age,sleepMin,feeds,nap,sleeping),[age,sleepMin,feeds,nap,sleeping]);
+  const weekData=useMemo(()=>{const d=new Date();return Array.from({length:7},(_,i)=>{const x=new Date(d);x.setDate(x.getDate()-6+i);const dm=x.toISOString().slice(0,10);const tot=logs.filter(l=>l.type==="sommeil"&&l.date===dm).reduce((a,l)=>a+(l.dur||45),0)||[5.8,6.2,5.4,7.1,6.5,6.9,7.3][i];return{d:["L","M","M","J","V","S","D"][i],h:+(tot/60).toFixed(1)};});},[logs]);
+  const omsData=useMemo(()=>{const a=[];for(let m=0;m<=Math.min(24,age.months+2);m++){const med=medW(m,"m"),g=med*.97,e=med*1.03;a.push({m,med:+med.toFixed(2),p3:+(med*.88).toFixed(2),p97:+(med*1.12).toFixed(2),actual:m===age.months?+(med*1.02).toFixed(2):null});}return a;},[age]);
+  const toggleSleep=()=>{if(!sleeping){setSleeping(true);setSleepStart(Date.now());}else{const dur=Math.round((Date.now()-(sleepStart||Date.now()))/60000);addLog({type:"sommeil",dur,date:iso()});setSleeping(false);setSleepStart(null);flash(`Sommeil : ${dur} min enregistré`);}};
+  const upcoming=VACCINS.find(v=>v.m>=age.months);
+  const milGroup=MILESTONES.find(mg=>mg.m>=age.months-1&&mg.m<=age.months+3);
+  const sleepH=Math.floor(sleepMin/60),sleepM=sleepMin%60;const sleepBig=sleepH+"h"+(sleepM?" "+sleepM+"min":"");
+  const rew=[
+    {bg:"linear-gradient(160deg,#557A66,#1a2a20)",k:"BÉBÉ",big:age.label,tx:`${age.months} mois · fenêtre d'éveil ${wakeW} min`},
+    {bg:"linear-gradient(160deg,#3C5B49,#0f1a14)",k:"SOMMEIL",big:sleepBig,tx:`${feeds} repas aujourd'hui`},
+    {bg:"linear-gradient(160deg,#DC9B4E,#7a4e15)",k:"PROCH. SIESTE",big:nap,tx:"Estimation par les rythmes observés."},
+    {bg:"linear-gradient(160deg,#3C5B49,#0f1a14)",k:"LE MOT DE NID",big:"🌿",tx:"Chaque bébé a son propre rythme — observe et ajuste."},
+  ];
+  return(<>
+    <div className="card" style={{marginTop:6,display:"flex",alignItems:"center",gap:14}}>
+      <div style={{width:64,height:64,borderRadius:18,background:"var(--sgs)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:"none"}}>
+        <span style={{fontSize:30}}>🌱</span>
+      </div>
+      <div>
+        <div style={{fontFamily:"Fraunces,serif",fontSize:22,fontWeight:700}}>{age.label}</div>
+        <div style={{fontSize:12.5,color:"var(--mu)"}}>Fenêtre d'éveil conseillée : {wakeW} min</div>
+      </div>
+    </div>
+    <div className="lbl"><Leaf size={14}/> La lecture du jour</div>
+    <LectureCard lines={lines} color="#557A66"/>
+    <div className="lbl"><TrendingUp size={14}/> Indicateurs</div>
+    <div className="kpis">
+      <KPI icon={Clock} label="Éveil max." val={`${wakeW} min`} sub="entre 2 siestes"/>
+      <KPI icon={Moon} label="Sommeil" val={`${Math.floor(sleepMin/60)}h${sleepMin%60?sleepMin%60+"m":""}`}/>
+      <KPI icon={Milk} label="Repas" val={`${feeds}`} sub="aujourd'hui"/>
+      <KPI icon={Sparkles} label="Proch. sieste" val={nap} color="var(--hn2)"/>
+    </div>
+    <div className="lbl"><Plus size={14}/> Journal du jour</div>
+    <div className="logrow">
+      {[
+        [sleeping?"Arrêter":"Sommeil",sleeping?"⏹":"😴","var(--sgs)","var(--sg)",toggleSleep],
+        ["Repas","🍼","var(--hns)","var(--hn2)",()=>{addLog({type:"repas",date:iso()});flash("Repas noté");}],
+        ["Couche","💧","var(--cfs)","var(--cf)",()=>{addLog({type:"couche",date:iso()});flash("Couche notée");}],
+        ["Éveil","✨","var(--sgs)","var(--sg)",()=>{addLog({type:"eveil",date:iso()});flash("Éveil noté");}],
+      ].map(([l,e,bg,col,fn])=>(<div key={l} className="lgb" onClick={fn}><div className="c" style={{background:bg}}><span style={{fontSize:20}}>{e}</span></div>{l}</div>))}
+    </div>
+    {sleeping&&<div style={{textAlign:"center",padding:"10px 0",fontSize:13,fontWeight:700,color:"var(--sg)"}}>😴 Sommeil en cours — appuyer pour arrêter</div>}
+    <div className="lbl"><BarChart3 size={14}/> Sommeil 7 jours</div>
+    <div className="card"><div style={{height:120}}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={weekData} margin={{top:8,right:6,left:-28,bottom:0}}>
+          <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#557A66" stopOpacity={.35}/><stop offset="100%" stopColor="#557A66" stopOpacity={.02}/></linearGradient></defs>
+          <XAxis dataKey="d" tick={{fontSize:11,fill:"#6E7A70"}} axisLine={false} tickLine={false}/>
+          <YAxis domain={[0,12]} tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={24}/>
+          <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--ln)",fontSize:12}} formatter={v=>[`${v}h`,"Sommeil"]} labelStyle={{display:"none"}}/>
+          <Area type="monotone" dataKey="h" stroke="#3C5B49" strokeWidth={2.5} fill="url(#bg)"/>
+        </AreaChart>
+      </ResponsiveContainer>
+    </div></div>
+    <div className="lbl"><Scale size={14}/> Courbes OMS</div>
+    <div className="card">
+      <div className="seg" style={{marginBottom:12}}>
+        {[["poids","Poids (kg)"],["taille","Taille (cm)"]].map(([k,l])=>(<div key={k} className={`opt ${omsM===k?"on":""}`} onClick={()=>setOmsM(k)}>{l}</div>))}
+      </div>
+      <div style={{height:140}}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={omsData} margin={{top:8,right:6,left:-14,bottom:0}}>
+            <XAxis dataKey="m" tick={{fontSize:10,fill:"#6E7A70"}} axisLine={false} tickLine={false} interval={3}/>
+            <YAxis tick={{fontSize:9,fill:"#6E7A70"}} axisLine={false} tickLine={false} width={34}/>
+            <ReferenceLine x={age.months} stroke="var(--hn)" strokeDasharray="4 4" strokeWidth={1.5}/>
+            <Tooltip contentStyle={{borderRadius:12,border:"1px solid var(--ln)",fontSize:12,fontFamily:"Mulish"}} formatter={v=>[`${v}kg`,"Médiane"]} labelFormatter={l=>`${l} mois`}/>
+            <Line type="monotone" dataKey="p3" stroke="var(--ln)" strokeWidth={1} dot={false}/>
+            <Line type="monotone" dataKey="med" stroke="#3C5B49" strokeWidth={2.5} dot={false}/>
+            <Line type="monotone" dataKey="p97" stroke="var(--ln)" strokeWidth={1} dot={false}/>
+            <Line type="monotone" dataKey="actual" stroke="var(--hn)" strokeWidth={0} dot={{r:5,fill:"var(--hn2)"}}/>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <p style={{fontSize:11.5,color:"var(--mu)",textAlign:"center",marginTop:4}}>Courbes OMS indicatives (P3, médiane, P97). Partagez avec votre pédiatre.</p>
+    </div>
+    {milGroup&&<><div className="lbl"><Footprints size={14}/> Jalons vers {milGroup.m} mois</div>
+    <div className="card">{milGroup.items.map(it=>(<div key={it} style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+      <div className={`chk ${checks[it]?"on":""}`} onClick={()=>setChecks(c=>({...c,[it]:!c[it]}))}>
+        {checks[it]&&<Check size={14} color="#fff"/>}
+      </div>
+      <div style={{fontSize:14.5,fontWeight:700,textDecoration:checks[it]?"line-through":"none",color:checks[it]?"var(--mu)":"var(--ink)"}}>{it}</div>
+    </div>))}<p style={{fontSize:12,color:"var(--mu)",marginTop:4}}>Les jalons sont des moyennes — chaque bébé a son propre calendrier.</p></div></>}
+    {upcoming&&<><div className="lbl"><Syringe size={14}/> Prochaine vaccination</div>
+    <div className="card">
+      <div style={{fontWeight:800,fontSize:15}}>{upcoming.label}</div>
+      <div style={{fontSize:13,color:"var(--mu)",marginTop:4}}>{upcoming.sub}</div>
+      <div style={{fontSize:12,color:"var(--sg)",marginTop:8,fontWeight:700}}>Calendrier vaccinal 2024 — à confirmer avec votre pédiatre.</div>
+    </div></>}
+    <div className="lbl"><BarChart3 size={14}/> Bilan</div>
+    <RewindCards cards={rew}/>
+    <div className="note" style={{marginTop:14}}><Info size={16} style={{flex:"none"}}/><span>Fièvre ≥ 38°C avant 3 mois → avis médical urgent. Refus de boire, teint gris, gêne respiratoire → 15.</span></div>
+  </>);
+}
+
+/* ── Assistant IA ────────────────────────────────────────────── */
+function AssistantIA({profile,c,g,pp,age}){
+  const [msgs,setMsgs]=useState([{role:"assistant",content:"Bonjour 🌿 Je suis l'assistant de Nid. Posez-moi une question sur votre parcours — je suis là pour informer, rassurer, orienter, sans jamais remplacer votre équipe médicale."}]);
+  const [input,setInput]=useState("");const [loading,setLoading]=useState(false);
+  const scr=useRef(null);
+  useEffect(()=>{scr.current?.scrollTo(0,scr.current.scrollHeight);},[msgs,loading]);
+  const SUGG={
+    preconception:["Quand suis-je le plus fertile ?","Quels examens avant de concevoir ?","Comment optimiser mes chances naturellement ?"],
+    grossesse:["Puis-je manger du fromage ?","Quels signes doivent m'alerter ?","Comment soulager les nausées ?"],
+    postpartum:["Mes tranchées sont-elles normales ?","Comment savoir si bébé tète assez ?","Je me sens dépassée, que faire ?"],
+    bebe:["Pourquoi mon bébé pleure le soir ?","Quand commencer la diversification ?","Comment instaurer une routine de sieste ?"],
+  };
+  const phCtx={
+    preconception:c?`J${c.dayIn} du cycle · ${CPH[c.ph]?.l||c.ph} · ovulation estimée dans ${c.dToOv}j`:"",
+    grossesse:g?`${g.sa} SA · T${g.tri} · ${g.wLeft} semaines avant terme`:"",
+    postpartum:pp?pp.label:"",
+    bebe:age?age.label:"",
+  };
+  const nameCtx=profile.name?", prénom "+profile.name:"";
+  const phCtxStr=phCtx[profile.phase]?", données : "+phCtx[profile.phase]:"";
+  const phLabel=PHASES[profile.phase]?.label||profile.phase;
+  const sys="Tu es l'assistant de Nid, une application française d'accompagnement périnatal (préconception → 2 ans).\n"
+    +"Contexte utilisateur : phase \""+phLabel+"\""+nameCtx+phCtxStr+".\n"
+    +"Rôle : informer, rassurer, orienter — avec chaleur, sans jugement, en français.\n"
+    +"Règles impératives :\n"
+    +"- Ne jamais poser de diagnostic ni prescrire de traitement.\n"
+    +"- Pour tout signe d'alerte (fièvre nourrisson, saignements, douleurs intenses, pensées sombres) : orienter vers un professionnel ; urgences : 15 (SAMU), 3114 (souffrance psychique).\n"
+    +"- Réponses courtes (3-5 phrases), concrètes, chaleureuses.\n"
+    +"- Indiquer que les informations s'appuient sur des repères de santé publique et doivent être validées par un professionnel.\n"
+    +"- Aborder fausse couche et deuil périnatal avec une sensibilité particulière.";
+  const send=useCallback(async(text)=>{
+    const q=(text||input).trim();if(!q||loading)return;
+    const next=[...msgs,{role:"user",content:q}];
+    setMsgs(next);setInput("");setLoading(true);
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,system:sys,messages:next.map(m=>({role:m.role,content:m.content}))})
+      });
+      const data=await res.json();
+      const txt=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("
+").trim()||"Je n'ai pas pu répondre. Pour toute question de santé, contactez votre sage-femme ou votre médecin.";
+      setMsgs(m=>[...m,{role:"assistant",content:txt}]);
+    }catch(e){
+      setMsgs(m=>[...m,{role:"assistant",content:"L'assistant n'est pas disponible. Pour toute question, n'hésitez pas à contacter votre sage-femme ou votre médecin."}]);
+    }finally{setLoading(false);}
+  },[input,loading,msgs,sys]);
+  return(<div className="scr fade" key="ia" style={{display:"flex",flexDirection:"column",paddingBottom:100}}>
+    <div className="top"><div><div className="eb">Nid · Assistant</div><h1 className="h1 sf">Posez votre question</h1></div></div>
+    <div style={{display:"flex",gap:9,alignItems:"flex-start",background:"var(--cls)",border:"1px solid #E9C9BC",borderRadius:14,padding:"10px 12px",fontSize:12,color:"#7a3b27",lineHeight:1.4,marginBottom:14}}>
+      <Shield size={15} style={{flex:"none",marginTop:1}}/><span>Informations bienveillantes et sourcées. Ne remplace pas un avis médical — consultez un professionnel pour tout doute.</span>
+    </div>
+    <div ref={scr} style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,paddingBottom:8}}>
+      {msgs.map((m,i)=>(<div key={i} className={`bub ${m.role==="user"?"b-u":"b-a"}`}>{m.content}</div>))}
+      {loading&&<div className="bub b-a typing" style={{display:"flex",gap:4,padding:"14px 16px"}}><i/><i/><i/></div>}
+    </div>
+    {msgs.length<=1&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+      {(SUGG[profile.phase]||[]).map(q=>(<div key={q} style={{background:"var(--sf)",border:"1px solid var(--ln)",borderRadius:999,padding:"9px 13px",fontSize:13,cursor:"pointer",fontWeight:600,color:"var(--sg)"}} onClick={()=>send(q)}>{q}</div>))}
+    </div>}
+    <div className="comp">
+      <textarea rows={1} value={input} placeholder="Écrire un message…" onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}/>
+      <button className="sbtn" disabled={!input.trim()||loading} onClick={()=>send()}><Send size={18}/></button>
+    </div>
+  </div>);
+}
+
+/* ── Onboarding ──────────────────────────────────────────────── */
+function Onboarding({profile,onDone,isFirst}){
+  const [name,setName]=useState(profile.name||"");
+  const [phase,setPhase]=useState(profile.phase||null);
+  const [date,setDate]=useState("");
+  const dLabel={grossesse:"Date du terme prévu (DPA)",bebe:"Date de naissance de bébé",postpartum:"Date de l'accouchement",preconception:"1ᵉʳ jour de vos dernières règles"}[phase]||"";
+  return(<div className="scr fade" style={{paddingTop:0}}>
+    <div style={{textAlign:"center",margin:"36px 0 10px"}}>
+      <div style={{width:56,height:56,borderRadius:18,background:"var(--sg)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:14}}>
+        <Leaf size={26} color="#fff"/>
+      </div>
+      <h1 className="h1 sf" style={{fontSize:28}}>{isFirst?"Bienvenue dans Nid":"Votre parcours"}</h1>
+      <p style={{fontSize:14,color:"var(--mu)",lineHeight:1.55,margin:"8px 18px 0"}}>{isFirst?"Un accompagnement bienveillant, de la préconception aux 2 ans de bébé.":"Mettez à jour là où vous en êtes."}</p>
+    </div>
+    {isFirst&&<div style={{marginTop:18}}>
+      <div className="lbl" style={{marginTop:6}}>Comment vous appeler ?</div>
+      <input className="inp" placeholder="Prénom (facultatif)" value={name} onChange={e=>setName(e.target.value)}/>
+    </div>}
+    <div className="lbl">Où en êtes-vous ?</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      {ORDER.map(p=>{const P=PHASES[p];const on=phase===p;return(<button key={p} onClick={()=>setPhase(p)} style={{background:on?"var(--sgs)":"var(--sf)",border:`${on?2:1}px solid ${on?"var(--sg)":"var(--ln)"}`,borderRadius:18,padding:16,cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:8}}>
+        <P.Icon size={22} color={on?"var(--sg)":P.color}/>
+        <div style={{fontWeight:800,fontSize:14.5,color:on?"var(--sg)":"var(--ink)"}}>{P.label}</div>
+      </button>);})}
+    </div>
+    {phase&&dLabel&&<div style={{marginTop:6}}>
+      <div className="lbl">{dLabel} <span style={{textTransform:"none",fontWeight:600,color:"var(--mu)"}}>(facultatif)</span></div>
+      <input type="date" className="inp" value={date} onChange={e=>setDate(e.target.value)}/>
+    </div>}
+    <button className="btn btn-p" style={{marginTop:24}} disabled={!phase} onClick={()=>onDone({name:name.trim(),phase,dpa:phase==="grossesse"?date:profile.dpa,babyBirth:phase==="bebe"?date:profile.babyBirth,birthDate:phase==="postpartum"?date:profile.birthDate,lastPeriod:phase==="preconception"?date:profile.lastPeriod})}>
+      {isFirst?"Commencer":"Mettre à jour"}
+    </button>
+    <div style={{display:"flex",gap:6,alignItems:"center",justifyContent:"center",marginTop:14,fontSize:11.5,color:"var(--mu)"}}>
+      <Shield size={13}/> Vos données restent privées — jamais revendues.
+    </div>
+  </div>);
+}
+
+/* ── Profil ──────────────────────────────────────────────────── */
+function Profil({profile,comfort,setComfort,goPhase,flash}){
+  const P=PHASES[profile.phase]||PHASES.preconception;
+  return(<div className="scr fade" key="profil">
+    <div className="top"><div><div className="eb">Votre espace</div><h1 className="h1 sf">Profil</h1></div></div>
+    <div className="card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+      <div style={{width:48,height:48,borderRadius:16,background:"var(--sgs)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Fraunces,serif",fontSize:20,fontWeight:700,color:"var(--sg)"}}>{(profile.name||"N")[0].toUpperCase()}</div>
+      <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15.5}}>{profile.name||"Vous"}</div><div style={{fontSize:12.5,color:"var(--mu)"}}>{P.label}</div></div>
+      <button className="btn btn-s" onClick={goPhase}>Modifier</button>
+    </div>
+    <div className="lbl"><Settings size={14}/> Réglages</div>
+    <div className="card" style={{display:"flex",alignItems:"center",gap:14,padding:16}}>
+      <div style={{width:40,height:40,borderRadius:12,background:"var(--cfs)",display:"flex",alignItems:"center",justifyContent:"center",flex:"none"}}><HandHeart size={18} color="var(--cf)"/></div>
+      <div style={{flex:1}}>
+        <div style={{fontWeight:800,fontSize:14.5}}>Mode réconfort</div>
+        <div style={{fontSize:12,color:"var(--mu)",lineHeight:1.4}}>Met en pause les jalons et comparaisons, pour les moments difficiles ou un deuil.</div>
+      </div>
+      <div className={`tgl ${comfort?"on":""}`} onClick={()=>{setComfort(v=>!v);flash(comfort?"Mode réconfort désactivé":"Mode réconfort activé ♡");}}><b/></div>
+    </div>
+    <div className="lbl"><Shield size={14}/> Confidentialité</div>
+    <div className="card">
+      {[["Aucune revente de vos données","Données de santé jamais vendues ni utilisées pour de la publicité."],["Stockage local & privé","Vos données restent sur votre appareil."],["Votre droit à l'effacement","Vous pouvez tout supprimer à tout moment."]].map(([t,d],i)=>(<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<2?14:0}}>
+        <div style={{width:32,height:32,borderRadius:10,background:"var(--sgs)",display:"flex",alignItems:"center",justifyContent:"center",flex:"none"}}><Shield size={16} color="var(--sg)"/></div>
+        <div><div style={{fontWeight:700,fontSize:14}}>{t}</div><div style={{fontSize:12.5,color:"var(--mu)",lineHeight:1.45}}>{d}</div></div>
+      </div>))}
+      <button className="btn btn-s" style={{marginTop:14,width:"100%"}} onClick={()=>flash("Export préparé (fonctionnalité à venir)")}>Exporter mes données</button>
+    </div>
+    <div style={{marginTop:28,borderTop:"1px solid var(--ln)",paddingTop:18,display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <div style={{width:28,height:28,borderRadius:9,background:"var(--sg)",display:"flex",alignItems:"center",justifyContent:"center"}}><Leaf size={14} color="#fff"/></div>
+        <span style={{fontFamily:"Fraunces,serif",fontSize:16,fontWeight:700}}>Nid</span>
+        <span style={{fontSize:12,fontWeight:800,color:"var(--mu)",letterSpacing:".04em"}}>v3.{BUILD.num}</span>
+      </div>
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        <div style={{background:"var(--sgs)",color:"var(--sg)",borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:800,letterSpacing:".06em"}}>{BUILD.sprint.toUpperCase()}</div>
+        <div style={{background:"var(--hns)",color:"var(--hn2)",borderRadius:999,padding:"4px 10px",fontSize:11,fontWeight:800,fontFamily:"monospace"}}>{BUILD.sha}</div>
+      </div>
+      <div style={{fontSize:11.5,color:"var(--mu)",textAlign:"center",lineHeight:1.5,maxWidth:260}}>{BUILD.label}</div>
+      <div style={{fontSize:11,color:"var(--mu)",opacity:.7}}>Dernière mise à jour : {BUILD.date}</div>
+    </div>
+  </div>);
+}
+
+/* ── Parcours ────────────────────────────────────────────────── */
+function Parcours({profile,setProfile,flash}){
+  return(<div className="scr fade" key="parcours">
+    <div className="top"><div><div className="eb">Votre parcours</div><h1 className="h1 sf">Le Fil</h1></div></div>
+    <div className="card" style={{marginTop:6}}>
+      <Fil phase={profile.phase}/>
+      <p style={{fontSize:13.5,lineHeight:1.6,color:"#34403a",marginTop:10}}>Votre parcours de la préconception aux 2 ans de bébé — chaque phase à son rythme, dans la continuité.</p>
+    </div>
+    <div className="lbl"><Map size={14}/> Phases</div>
+    {ORDER.map(p=>{const P=PHASES[p];const cur=p===profile.phase;return(<div key={p} style={{display:"flex",alignItems:"center",gap:14,padding:15,background:"var(--sf)",border:`${cur?2:1}px solid ${cur?"var(--sg)":"var(--ln)"}`,borderRadius:18,marginBottom:10,cursor:"pointer"}} onClick={()=>{setProfile(pr=>({...pr,phase:p}));flash(`Phase : ${P.label}`);}}>
+      <div style={{width:42,height:42,borderRadius:13,background:cur?"var(--sgs)":P.color+"22",display:"flex",alignItems:"center",justifyContent:"center",flex:"none"}}><P.Icon size={20} color={cur?"var(--sg)":P.color}/></div>
+      <div style={{flex:1}}><div style={{fontWeight:800,fontSize:14.5,color:cur?"var(--sg)":"var(--ink)"}}>{P.label}</div></div>
+      {cur&&<div className="badge" style={{background:"var(--sgs)",color:"var(--sg)"}}>Actif</div>}
+    </div>);})}
+  </div>);
+}
+
+/* ── APP principale ──────────────────────────────────────────── */
+function App(){
+  const [loaded,setLoaded]=useState(false);
+  const [profile,setProfile]=useState({name:"",phase:null,cycleLen:28,periodLen:5,lastPeriod:"",dpa:"",babyBirth:"",birthDate:""});
+  const [tab,setTab]=useState("home");
+  const [sub,setSub]=useState(null); // "phase" | "onboarding"
+  const [comfort,setComfort]=useState(false);
+  const [logs,setLogs]=useState([]);
+  const [phSheet,setPhSheet]=useState(null); // {ph, day}
+  const [toastMsg,setToastMsg]=useState(null);
+  const tmr=useRef(null);
+
+  useEffect(()=>{(async()=>{
+    const pr=await ld("nid_profile_v3",null);const lg=await ld("nid_logs_v3",[]);const cf=await ld("nid_comfort_v3",false);
+    if(pr)setProfile(pr);setLogs(lg||[]);setComfort(!!cf);setLoaded(true);
+  })();},[]);
+  useEffect(()=>{if(loaded)sv("nid_profile_v3",profile);},[profile,loaded]);
+  useEffect(()=>{if(loaded)sv("nid_logs_v3",logs);},[logs,loaded]);
+  useEffect(()=>{if(loaded)sv("nid_comfort_v3",comfort);},[comfort,loaded]);
+
+  const flash=useCallback((m)=>{setToastMsg(m);clearTimeout(tmr.current);tmr.current=setTimeout(()=>setToastMsg(null),1900);},[]);
+  const addLog=useCallback((l)=>setLogs(prev=>[{...l,t:Date.now()},...prev]),[]);
+  const onTap=useCallback((ph,day)=>setPhSheet({ph,day}),[]);
+  const goPhase=()=>setSub("phase");
+
+  const c=useMemo(()=>profile.phase==="preconception"?calcPreco({lastPeriod:profile.lastPeriod,cycleLen:profile.cycleLen||28,periodLen:profile.periodLen||5}):null,[profile]);
+  const g=useMemo(()=>profile.phase==="grossesse"&&profile.dpa?calcGross(profile):null,[profile]);
+  const pp=useMemo(()=>profile.phase==="postpartum"?ppInfo(profile.birthDate||isoOff(-30)):null,[profile]);
+  const age=useMemo(()=>profile.phase==="bebe"?ageInfo(profile.babyBirth||isoOff(-120)):null,[profile]);
+
+  if(!loaded)return(<><style>{CSS}</style><div className="stage nr"><div className="device"/></div></>);
+
+  const onboarding=!profile.phase;
+  const onDone=(p)=>{setProfile(pr=>({...pr,...p}));setSub(null);setTab("home");};
+  const P=PHASES[profile.phase]||PHASES.preconception;
+
+  const TABS=[["home","Accueil",Home],["ia","Assistant",MessageCircle],["parcours","Parcours",Map],["profil","Profil",Settings]];
+
+  return(<>
+    <style>{CSS}</style>
+    <div className="stage nr">
+      <div className={`device ${comfort?"cm":""}`}>
+        {onboarding?(
+          <Onboarding profile={profile} onDone={onDone} isFirst/>
+        ):sub==="phase"?(
+          <Onboarding profile={profile} onDone={onDone} isFirst={false}/>
+        ):(
+          <>
+            {tab==="home"&&(<div className="scr fade" key={"home"+profile.phase}>
+              <div className="top">
+                <div><div className="eb">{P.label}</div><h1 className="h1 sf">{comfort?"On avance en douceur":"Votre nid, aujourd'hui"}</h1></div>
+                <button className="chip" onClick={goPhase}><P.Icon size={14}/> {P.short}</button>
+              </div>
+              <div style={{marginBottom:6}}><Fil phase={profile.phase}/></div>
+              {profile.phase==="preconception"&&<DashPreco profile={profile} setProfile={setProfile} onTap={onTap} flash={flash}/>}
+              {profile.phase==="grossesse"&&<DashGross profile={profile} flash={flash}/>}
+              {profile.phase==="postpartum"&&<DashPP profile={profile} comfort={comfort} flash={flash}/>}
+              {profile.phase==="bebe"&&<DashBebe profile={profile} logs={logs} addLog={addLog} comfort={comfort} flash={flash}/>}
+            </div>)}
+            {tab==="ia"&&<AssistantIA profile={profile} c={c} g={g} pp={pp} age={age}/>}
+            {tab==="parcours"&&<Parcours profile={profile} setProfile={setProfile} flash={flash}/>}
+            {tab==="profil"&&<Profil profile={profile} comfort={comfort} setComfort={setComfort} goPhase={goPhase} flash={flash}/>}
+            <div className="tbar">
+              {TABS.map(([k,l,Ic])=>(<button key={k} className={`tab ${tab===k?"a":""}`} onClick={()=>setTab(k)}>
+                <span className="dot"/><Ic size={21}/><span>{l}</span>
+              </button>))}
+            </div>
+          </>
+        )}
+        {phSheet&&<PhaseSheet phId={phSheet.ph} day={phSheet.day} c={c} onClose={()=>setPhSheet(null)}/>}
+        <div className="bstrip">
+          <span className="bd">Données à jour au {BUILD.date}</span>
+          <span className="bp">Build {BUILD.num}</span>
+        </div>
+        <div className={`toast ${toastMsg?"show":""}`}><Check size={15}/>{toastMsg}</div>
+      </div>
+    </div>
+  </>);
+}
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
 </body>
 </html>
