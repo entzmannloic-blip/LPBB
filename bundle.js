@@ -82,9 +82,8 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .nr{font-family:'Mulish',system-ui,sans-serif;color:var(--ink)}
 .sf{font-family:'Fraunces','Georgia',serif}
-.stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-  background:radial-gradient(1200px 600px at 15% -10%,#F3EFE2 0,transparent 55%),radial-gradient(900px 700px at 110% 110%,#DDE7DD 0,transparent 50%),#E4E8DC}
-.device{position:relative;width:100%;max-width:434px;height:min(95vh,960px);background:var(--bg);border-radius:38px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 80px -30px rgba(36,48,41,.45),0 0 0 1px rgba(36,48,41,.06)}
+.stage{min-height:100vh;min-height:100dvh;display:flex;align-items:stretch;justify-content:center;background:var(--bg)}
+.device{position:relative;width:100%;max-width:640px;height:100vh;height:100dvh;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
 .scr{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 16px 122px;scrollbar-width:none}.scr::-webkit-scrollbar{display:none}
 .fade{animation:f .4s cubic-bezier(.2,.7,.2,1)}@keyframes f{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .top{padding:22px 4px 6px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
