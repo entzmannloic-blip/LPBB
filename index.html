@@ -3,10 +3,21 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Nid</title>
 <meta name="theme-color" content="#3C5B49"/>
+<meta name="description" content="Nid — compagnon bienveillant de préconception : cycle, fertilité et observation, 100% privé."/>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.webmanifest"/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129530;</text></svg>"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+
+<!-- iOS standalone -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Nid"/>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#EBEEE5;-webkit-text-size-adjust:100%;overflow:hidden}
@@ -22,6 +33,19 @@ window.addEventListener('error',function(e){
   var r=document.getElementById('root');
   if(r && r.innerHTML.length<50){document.getElementById('err').style.display='block';}
 });
+// Capture l'événement d'installation PWA pour l'utiliser depuis l'app
+window.__nidInstall=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  window.__nidInstall=e;
+  window.dispatchEvent(new Event('nid-install-ready'));
+});
+// Enregistrement du service worker (PWA installable + hors-ligne)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
 </script>
 <script src="bundle.js"></script>
 </body>
